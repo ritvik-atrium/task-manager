@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState } from 'react';
@@ -11,19 +10,16 @@ import {
   Trash2, 
   CheckCircle2, 
   Circle, 
-  Sparkles,
   MoreVertical,
   Edit2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { suggestSubtasks } from '@/ai/flows/subtask-suggestion';
 
 interface TaskItemProps {
   task: Task;
@@ -45,32 +41,8 @@ export function TaskItem({
   depth = 0 
 }: TaskItemProps) {
   const [isExpanded, setIsExpanded] = useState(true);
-  const [isAiLoading, setIsAiLoading] = useState(false);
   
   const hasSubtasks = task.subtaskIds.length > 0;
-
-  const handleAiBreakdown = async () => {
-    setIsAiLoading(true);
-    try {
-      const result = await suggestSubtasks({ taskDescription: task.title });
-      for (const subtaskTitle of result.subtasks) {
-        onAddSubtaskWithTitle(task.id, subtaskTitle);
-      }
-      setIsExpanded(true);
-    } catch (error) {
-      console.error("AI suggest subtasks failed", error);
-    } finally {
-      setIsAiLoading(false);
-    }
-  };
-
-  // Internal helper to add subtask with a specific title (from AI)
-  const onAddSubtaskWithTitle = (parentId: string, title: string) => {
-    // This is handled by parent state management via hook, but for simplicity we rely on the parent's standard onAddSubtask trigger or direct hook calls. 
-    // In this simplified version, let's assume we just trigger the UI for manual adding, 
-    // OR we could pass the addTask function down. Let's stick to manual for stability, 
-    // but the button exists.
-  };
 
   return (
     <div className="flex flex-col">
@@ -121,17 +93,6 @@ export function TaskItem({
         </div>
 
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 text-primary hover:text-primary hover:bg-primary/10"
-            onClick={handleAiBreakdown}
-            disabled={isAiLoading}
-            title="AI Breakdown"
-          >
-            <Sparkles className={cn("h-4 w-4", isAiLoading && "animate-pulse")} />
-          </Button>
-
           <Button
             variant="ghost"
             size="icon"
