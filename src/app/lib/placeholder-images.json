@@ -1,0 +1,11 @@
+
+{
+  "placeholderImages": [
+    {
+      "id": "app-logo",
+      "description": "A minimalist bird nest icon representing productivity and organization",
+      "imageUrl": "https://picsum.photos/seed/tasknest/200/200",
+      "imageHint": "nest bird"
+    }
+  ]
+}
