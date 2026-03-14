@@ -60,7 +60,6 @@ export default function TaskNest() {
   const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
   const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
   const [isSelectionDialogOpen, setIsSelectionDialogOpen] = useState(false);
-  // Default view set to 'parallel' as requested
   const [view, setView] = useState<'list' | 'quadrant' | 'parallel'>('parallel');
   
   const [taskToEdit, setTaskToEdit] = useState<Task | undefined>();
@@ -174,6 +173,7 @@ export default function TaskNest() {
   };
 
   const saveTask = (title: string, description: string, deadline?: number) => {
+    // This function is now called AFTER the TaskDialog has triggered its internal close animation
     if (taskToEdit) {
       updateTask(taskToEdit.id, { title, description, deadline });
     } else {
@@ -232,7 +232,7 @@ export default function TaskNest() {
                       isActive={activeCategoryId === cat.id}
                       onClick={() => {
                         setActiveCategoryId(cat.id);
-                        setView('list'); // Click category -> Switch to List View
+                        setView('list');
                       }}
                       className="group flex items-center gap-3 rounded-lg py-5"
                     >
@@ -257,10 +257,10 @@ export default function TaskNest() {
                 <Download className="w-3 h-3" /> Backup
               </Button>
               <div className="relative">
-                <Input 
+                <input 
                   type="file" 
                   className="hidden" 
-                  id="import-json" 
+                  id="import-json-main" 
                   accept=".json"
                   onChange={handleImport}
                 />
@@ -268,7 +268,7 @@ export default function TaskNest() {
                   variant="outline" 
                   size="sm" 
                   className="w-full text-xs gap-2 px-1"
-                  onClick={() => document.getElementById('import-json')?.click()}
+                  onClick={() => document.getElementById('import-json-main')?.click()}
                 >
                   <Upload className="w-3 h-3" /> Restore
                 </Button>
@@ -409,10 +409,7 @@ export default function TaskNest() {
 
         <TaskDialog 
           isOpen={isTaskDialogOpen}
-          onClose={() => {
-            setIsTaskDialogOpen(false);
-            setTaskToEdit(undefined);
-          }}
+          onClose={() => setIsTaskDialogOpen(false)}
           onSave={saveTask}
           taskToEdit={taskToEdit}
         />
@@ -425,10 +422,7 @@ export default function TaskNest() {
 
         <SubtaskSelectionDialog
           isOpen={isSelectionDialogOpen}
-          onClose={() => {
-            setIsSelectionDialogOpen(false);
-            setTimeout(() => setUnmarkTargetId(null), 250);
-          }}
+          onClose={() => setIsSelectionDialogOpen(false)}
           parentTask={unmarkTargetId ? tasks[unmarkTargetId] : null}
           allTasks={tasks}
           onConfirm={handlePartialUnmark}
@@ -436,7 +430,7 @@ export default function TaskNest() {
 
         <AlertDialog open={isUnmarkPromptOpen} onOpenChange={(open) => {
           setIsUnmarkPromptOpen(open);
-          if (!open && !isSelectionDialogOpen) setTimeout(() => setUnmarkTargetId(null), 250);
+          if (!open) setUnmarkTargetId(null);
         }}>
           <AlertDialogContent className="sm:max-w-[450px]">
             <AlertDialogHeader>

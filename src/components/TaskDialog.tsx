@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,6 +27,7 @@ export function TaskDialog({ isOpen, onClose, onSave, taskToEdit }: TaskDialogPr
   const [error, setError] = useState<string | null>(null);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 
+  // Reset internal state when dialog opens
   useEffect(() => {
     if (isOpen) {
       setError(null);
@@ -42,6 +43,17 @@ export function TaskDialog({ isOpen, onClose, onSave, taskToEdit }: TaskDialogPr
     }
   }, [taskToEdit, isOpen]);
 
+  // Force restore pointer events if they get stuck - emergency safety measure
+  useEffect(() => {
+    if (!isOpen) {
+      const timeout = setTimeout(() => {
+        document.body.style.pointerEvents = 'auto';
+        document.body.style.overflow = 'auto';
+      }, 100);
+      return () => clearTimeout(timeout);
+    }
+  }, [isOpen]);
+
   const handleSave = () => {
     if (!title.trim()) {
       setError("Please enter a task title.");
@@ -52,26 +64,40 @@ export function TaskDialog({ isOpen, onClose, onSave, taskToEdit }: TaskDialogPr
       return;
     }
     
-    // Capture state values before cleanup
-    const t = title;
-    const d = description;
-    const dl = deadline.getTime();
+    const finalTitle = title;
+    const finalDescription = description;
+    const finalDeadline = deadline.getTime();
 
-    // CRITICAL: Close first to ensure Radix cleanup (pointer-events) completes 
-    // before the heavy main component re-render triggered by onSave
+    // 1. Close the dialog first to let Radix cleanup begin
     onClose();
     
-    // Defer the save to allow the browser to restore UI interactivity
+    // 2. Defer the heavy state update to the next event loop cycle
+    // This allows the Dialog's unmount/cleanup logic to finish before 
+    // the parent component triggers a massive re-render.
     setTimeout(() => {
-      onSave(t, d, dl);
+      onSave(finalTitle, finalDescription, finalDeadline);
     }, 50);
   };
+
+  const handleDateSelect = useCallback((date: Date | undefined) => {
+    if (date) {
+      setDeadline(date);
+      if (error) setError(null);
+      setIsCalendarOpen(false); // Close popover immediately on selection
+    }
+  }, [error]);
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => {
       if (!open) onClose();
     }}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent 
+        className="sm:max-w-[425px]"
+        onPointerDownOutside={(e) => {
+          // Prevent accidental closing if clicking inside the calendar popover
+          if (isCalendarOpen) e.preventDefault();
+        }}
+      >
         <DialogHeader>
           <DialogTitle>{taskToEdit ? 'Edit Task' : 'New Task'}</DialogTitle>
         </DialogHeader>
@@ -125,14 +151,9 @@ export function TaskDialog({ isOpen, onClose, onSave, taskToEdit }: TaskDialogPr
                 <CalendarComponent
                   mode="single"
                   selected={deadline}
-                  onSelect={(date) => {
-                    if (date) {
-                      setDeadline(date);
-                      if (error) setError(null);
-                      setIsCalendarOpen(false); // Close popover after selection
-                    }
-                  }}
+                  onSelect={handleDateSelect}
                   initialFocus
+                  disabled={(date) => date < new Date(new Date().setHours(0,0,0,0))}
                 />
               </PopoverContent>
             </Popover>
