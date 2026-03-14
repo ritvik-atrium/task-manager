@@ -202,11 +202,11 @@ export default function TaskNest() {
         <Sidebar className="border-r border-border/50 bg-white/30 backdrop-blur-xl">
           <SidebarHeader className="p-6">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-white shadow-lg shadow-primary/20">
+              <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-white shadow-lg shadow-primary/20 shrink-0">
                 <ListTodo className="w-6 h-6" />
               </div>
-              <div>
-                <h1 className="text-xl font-bold tracking-tight text-primary">TaskNest</h1>
+              <div className="min-w-0">
+                <h1 className="text-xl font-bold tracking-tight text-primary truncate">TaskNest</h1>
                 <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">Productivity Nest</p>
               </div>
             </div>
@@ -236,12 +236,12 @@ export default function TaskNest() {
                       }}
                       className="group flex items-center gap-3 rounded-lg py-5"
                     >
-                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: cat.color }} />
-                      <div className="flex flex-col flex-1">
+                      <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: cat.color }} />
+                      <div className="flex flex-col flex-1 min-w-0">
                         <span className="font-medium text-xs truncate">{cat.name}</span>
-                        <span className="text-[8px] uppercase tracking-tighter opacity-50 font-bold">{cat.area}</span>
+                        <span className="text-[8px] uppercase tracking-tighter opacity-50 font-bold truncate">{cat.area}</span>
                       </div>
-                      <Badge variant="secondary" className="bg-muted text-[10px] font-bold">
+                      <Badge variant="secondary" className="bg-muted text-[10px] font-bold shrink-0">
                         {Object.values(tasks).filter(t => t.categoryId === cat.id).length}
                       </Badge>
                     </SidebarMenuButton>
@@ -253,7 +253,7 @@ export default function TaskNest() {
 
           <SidebarFooter className="p-4 mt-auto">
             <div className="grid grid-cols-2 gap-2">
-              <Button variant="outline" size="sm" className="w-full text-xs gap-2" onClick={exportToJson}>
+              <Button variant="outline" size="sm" className="w-full text-xs gap-2 px-1" onClick={exportToJson}>
                 <Download className="w-3 h-3" /> Backup
               </Button>
               <div className="relative">
@@ -267,7 +267,7 @@ export default function TaskNest() {
                 <Button 
                   variant="outline" 
                   size="sm" 
-                  className="w-full text-xs gap-2"
+                  className="w-full text-xs gap-2 px-1"
                   onClick={() => document.getElementById('import-json')?.click()}
                 >
                   <Upload className="w-3 h-3" /> Restore
@@ -277,29 +277,29 @@ export default function TaskNest() {
           </SidebarFooter>
         </Sidebar>
 
-        <main className="flex-1 flex flex-col bg-background p-6 lg:p-10 overflow-hidden">
-          <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10 shrink-0">
-            <div>
+        <main className="flex-1 flex flex-col bg-background p-4 sm:p-6 lg:p-10 overflow-hidden min-w-0">
+          <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8 sm:mb-10 shrink-0 min-w-0">
+            <div className="min-w-0">
               <div className="flex items-center gap-2 text-primary font-semibold mb-1">
-                <LayoutGrid className="w-4 h-4" />
-                <span className="text-sm uppercase tracking-widest">{view === 'list' ? activeCategory?.name : 'Dashboard'}</span>
+                <LayoutGrid className="w-4 h-4 shrink-0" />
+                <span className="text-sm uppercase tracking-widest truncate">{view === 'list' ? activeCategory?.name : 'Dashboard'}</span>
               </div>
-              <h2 className="text-3xl font-bold tracking-tight text-foreground">
+              <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground truncate">
                 My Workspace
               </h2>
             </div>
             
-            <div className="flex flex-col sm:flex-row items-center gap-4">
-              <Tabs value={view} onValueChange={(v) => setView(v as any)} className="w-auto">
-                <TabsList className="bg-white/50 backdrop-blur-sm p-1 h-11 rounded-xl">
-                  <TabsTrigger value="list" className="rounded-lg h-9 gap-2 data-[state=active]:bg-primary data-[state=active]:text-white">
-                    <List className="w-4 h-4" /> List
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 min-w-0">
+              <Tabs value={view} onValueChange={(v) => setView(v as any)} className="w-full sm:w-auto">
+                <TabsList className="bg-white/50 backdrop-blur-sm p-1 h-11 rounded-xl w-full flex">
+                  <TabsTrigger value="list" className="flex-1 rounded-lg h-9 gap-2 data-[state=active]:bg-primary data-[state=active]:text-white">
+                    <List className="w-4 h-4" /> <span className="hidden xs:inline">List</span>
                   </TabsTrigger>
-                  <TabsTrigger value="quadrant" className="rounded-lg h-9 gap-2 data-[state=active]:bg-primary data-[state=active]:text-white">
-                    <Grid2X2 className="w-4 h-4" /> Quadrant
+                  <TabsTrigger value="quadrant" className="flex-1 rounded-lg h-9 gap-2 data-[state=active]:bg-primary data-[state=active]:text-white">
+                    <Grid2X2 className="w-4 h-4" /> <span className="hidden xs:inline">Quadrant</span>
                   </TabsTrigger>
-                  <TabsTrigger value="parallel" className="rounded-lg h-9 gap-2 data-[state=active]:bg-primary data-[state=active]:text-white">
-                    <Columns className="w-4 h-4" /> Parallel
+                  <TabsTrigger value="parallel" className="flex-1 rounded-lg h-9 gap-2 data-[state=active]:bg-primary data-[state=active]:text-white">
+                    <Columns className="w-4 h-4" /> <span className="hidden xs:inline">Parallel</span>
                   </TabsTrigger>
                 </TabsList>
               </Tabs>
@@ -318,18 +318,18 @@ export default function TaskNest() {
               
               <Button 
                 onClick={() => handleAddTask()}
-                className="h-11 px-6 gap-2 shadow-lg shadow-primary/20 bg-primary hover:bg-primary/90 transition-all active:scale-95 rounded-xl font-semibold"
+                className="h-11 px-6 gap-2 shadow-lg shadow-primary/20 bg-primary hover:bg-primary/90 transition-all active:scale-95 rounded-xl font-semibold w-full sm:w-auto shrink-0"
               >
                 <Plus className="w-5 h-5" />
-                Add New Task
+                Add Task
               </Button>
             </div>
           </header>
 
-          <div className="flex-1 flex flex-col min-h-0">
+          <div className="flex-1 flex flex-col min-h-0 min-w-0">
             {view === 'list' && (
               <>
-                <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-8 shrink-0">
+                <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-4 gap-4 mb-8 shrink-0">
                   <div className="bg-white p-4 rounded-2xl shadow-sm border border-border/50">
                     <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">New</p>
                     <p className="text-2xl font-bold">{stats.newCount}</p>
@@ -356,13 +356,13 @@ export default function TaskNest() {
                   </div>
                 </div>
 
-                <div className="flex-1 bg-white/60 backdrop-blur-sm rounded-3xl p-6 lg:p-8 shadow-sm border border-border/50 overflow-auto">
+                <div className="flex-1 bg-white/60 backdrop-blur-sm rounded-3xl p-4 sm:p-6 lg:p-8 shadow-sm border border-border/50 overflow-auto min-w-0">
                   {filteredRootTasks.length === 0 ? (
                     <div className="h-full flex flex-col items-center justify-center text-center p-10 opacity-50">
-                      <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mb-6">
-                        <CheckCircle className="w-10 h-10 text-muted-foreground" />
+                      <div className="w-16 h-16 sm:w-20 sm:h-20 bg-muted rounded-full flex items-center justify-center mb-6">
+                        <CheckCircle className="w-8 h-8 sm:w-10 sm:h-10 text-muted-foreground" />
                       </div>
-                      <h3 className="text-xl font-bold mb-2">Clean Nest!</h3>
+                      <h3 className="text-lg sm:text-xl font-bold mb-2">Clean Nest!</h3>
                       <p className="max-w-[260px] text-sm leading-relaxed">No tasks in this category. Start by adding a task or a nested subtask.</p>
                     </div>
                   ) : (
@@ -385,13 +385,13 @@ export default function TaskNest() {
             )}
 
             {view === 'quadrant' && (
-              <div className="flex-1 overflow-auto">
+              <div className="flex-1 overflow-auto min-w-0">
                 <DashboardQuadrant tasks={tasks} categories={categories} />
               </div>
             )}
 
             {view === 'parallel' && (
-              <div className="flex-1 overflow-hidden">
+              <div className="flex-1 overflow-hidden min-w-0">
                 <ParallelView 
                   tasks={tasks} 
                   categories={categories} 
