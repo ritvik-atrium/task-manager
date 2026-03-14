@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
@@ -24,7 +23,22 @@ export function useTasks() {
     if (saved) {
       try {
         const parsed: TaskStore = JSON.parse(saved);
-        setTasks(parsed.tasks || {});
+        
+        // Migration: Ensure all tasks have a status field (handling legacy boolean 'completed')
+        const rawTasks = parsed.tasks || {};
+        const migratedTasks: Record<string, Task> = {};
+        
+        Object.keys(rawTasks).forEach(id => {
+          const task = rawTasks[id];
+          if (!task.status) {
+            // Check for legacy 'completed' boolean if it existed
+            const isDone = (task as any).completed === true;
+            task.status = isDone ? 'done' : 'todo';
+          }
+          migratedTasks[id] = task;
+        });
+
+        setTasks(migratedTasks);
         setCategories(parsed.categories || DEFAULT_CATEGORIES);
       } catch (e) {
         console.error("Failed to parse saved data", e);
@@ -114,8 +128,10 @@ export function useTasks() {
       if (!task) return prev;
       
       let nextStatus: TaskStatus;
-      if (task.status === 'todo') nextStatus = 'in-progress';
-      else if (task.status === 'in-progress') nextStatus = 'done';
+      const currentStatus = task.status || 'todo';
+      
+      if (currentStatus === 'todo') nextStatus = 'in-progress';
+      else if (currentStatus === 'in-progress') nextStatus = 'done';
       else nextStatus = 'todo';
 
       const next = { ...prev, [id]: { ...task, status: nextStatus } };
@@ -189,7 +205,7 @@ export function useTasks() {
     addTask,
     updateTask,
     deleteTask,
-    toggleComplete: cycleStatus, // Keep alias for compatibility or update callers
+    toggleComplete: cycleStatus,
     addCategory,
     deleteCategory,
     exportToJson,

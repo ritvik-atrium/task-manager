@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState } from 'react';
@@ -47,7 +46,8 @@ export function TaskItem({
   const hasSubtasks = task.subtaskIds.length > 0;
 
   const getStatusIcon = () => {
-    switch (task.status) {
+    const status = task.status || 'todo';
+    switch (status) {
       case 'done':
         return <CheckCircle2 className="h-5 w-5 text-accent shrink-0" />;
       case 'in-progress':
@@ -83,7 +83,7 @@ export function TaskItem({
           <div 
             className="cursor-pointer flex items-center"
             onClick={() => onToggle(task.id)}
-            title={`Status: ${task.status.replace('-', ' ')} (Click to cycle)`}
+            title={`Status: ${(task.status || 'todo').replace('-', ' ')} (Click to cycle)`}
           >
             {getStatusIcon()}
           </div>
