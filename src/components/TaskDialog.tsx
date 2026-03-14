@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useEffect, useState } from 'react';
@@ -27,14 +26,16 @@ export function TaskDialog({ isOpen, onClose, onSave, taskToEdit }: TaskDialogPr
   const [deadline, setDeadline] = useState<Date | undefined>();
 
   useEffect(() => {
-    if (taskToEdit) {
-      setTitle(taskToEdit.title);
-      setDescription(taskToEdit.description || '');
-      setDeadline(taskToEdit.deadline ? new Date(taskToEdit.deadline) : undefined);
-    } else {
-      setTitle('');
-      setDescription('');
-      setDeadline(undefined);
+    if (isOpen) {
+      if (taskToEdit) {
+        setTitle(taskToEdit.title);
+        setDescription(taskToEdit.description || '');
+        setDeadline(taskToEdit.deadline ? new Date(taskToEdit.deadline) : undefined);
+      } else {
+        setTitle('');
+        setDescription('');
+        setDeadline(undefined);
+      }
     }
   }, [taskToEdit, isOpen]);
 
@@ -86,7 +87,7 @@ export function TaskDialog({ isOpen, onClose, onSave, taskToEdit }: TaskDialogPr
                   {deadline ? format(deadline, "PPP") : <span>Pick a date</span>}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
+              <PopoverContent className="w-auto p-0" align="start">
                 <CalendarComponent
                   mode="single"
                   selected={deadline}
