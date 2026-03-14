@@ -73,8 +73,17 @@ export default function TaskNest() {
 
   const stats = useMemo(() => {
     const all = Object.values(tasks).filter(t => t.categoryId === activeCategory?.id);
-    const completed = all.filter(t => t.completed).length;
-    return { all: all.length, completed, progress: all.length ? Math.round((completed / all.length) * 100) : 0 };
+    const completed = all.filter(t => t.status === 'done').length;
+    const inProgress = all.filter(t => t.status === 'in-progress').length;
+    const newCount = all.filter(t => t.status === 'todo').length;
+    
+    return { 
+      all: all.length, 
+      completed, 
+      inProgress, 
+      newCount,
+      progress: all.length ? Math.round((completed / all.length) * 100) : 0 
+    };
   }, [tasks, activeCategory]);
 
   const handleAddTask = (parentId?: string) => {
@@ -190,7 +199,7 @@ export default function TaskNest() {
             <Separator className="my-4 opacity-50" />
             <div className="flex items-center gap-2 px-2 text-xs text-muted-foreground">
               <Settings2 className="w-3.5 h-3.5" />
-              <span>v1.0.2 Stable</span>
+              <span>v1.0.3 Stable</span>
             </div>
           </SidebarFooter>
         </Sidebar>
@@ -231,10 +240,14 @@ export default function TaskNest() {
           {/* Main Content Area */}
           <div className="flex-1 flex flex-col min-h-0">
             {/* Stats Bar */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-8">
+              <div className="bg-white p-4 rounded-2xl shadow-sm border border-border/50">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">New</p>
+                <p className="text-2xl font-bold">{stats.newCount}</p>
+              </div>
               <div className="bg-white p-4 rounded-2xl shadow-sm border border-border/50">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">In Progress</p>
-                <p className="text-2xl font-bold">{stats.all - stats.completed}</p>
+                <p className="text-2xl font-bold text-primary">{stats.inProgress}</p>
               </div>
               <div className="bg-white p-4 rounded-2xl shadow-sm border border-border/50">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Completed</p>
@@ -244,7 +257,7 @@ export default function TaskNest() {
                 </div>
               </div>
               <div className="bg-white p-4 rounded-2xl shadow-sm border border-border/50">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Total Score</p>
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Success Rate</p>
                 <div className="flex items-center gap-3">
                   <p className="text-2xl font-bold">{stats.progress}%</p>
                   <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">

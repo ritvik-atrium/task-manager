@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
-import { Task, Category, TaskStore } from '@/types/task';
+import { Task, Category, TaskStore, TaskStatus } from '@/types/task';
 
 const STORAGE_KEY = 'tasknest_data';
 
@@ -50,7 +50,7 @@ export function useTasks() {
       id,
       title,
       description,
-      completed: false,
+      status: 'todo',
       categoryId: taskCategoryId,
       parentId,
       subtaskIds: [],
@@ -108,25 +108,29 @@ export function useTasks() {
     });
   }, []);
 
-  const toggleComplete = useCallback((id: string) => {
+  const cycleStatus = useCallback((id: string) => {
     setTasks(prev => {
       const task = prev[id];
       if (!task) return prev;
       
-      const newStatus = !task.completed;
-      const next = { ...prev, [id]: { ...task, completed: newStatus } };
+      let nextStatus: TaskStatus;
+      if (task.status === 'todo') nextStatus = 'in-progress';
+      else if (task.status === 'in-progress') nextStatus = 'done';
+      else nextStatus = 'todo';
 
-      // Helper to toggle all descendants
-      const toggleDescendants = (tid: string, status: boolean) => {
+      const next = { ...prev, [id]: { ...task, status: nextStatus } };
+
+      // Helper to update all descendants
+      const updateDescendants = (tid: string, status: TaskStatus) => {
         const t = next[tid];
         if (!t) return;
-        next[tid] = { ...t, completed: status };
-        t.subtaskIds.forEach(sid => toggleDescendants(sid, status));
+        next[tid] = { ...t, status: status };
+        t.subtaskIds.forEach(sid => updateDescendants(sid, status));
       };
 
       // If completing, complete all children
-      if (newStatus) {
-        task.subtaskIds.forEach(sid => toggleDescendants(sid, true));
+      if (nextStatus === 'done') {
+        task.subtaskIds.forEach(sid => updateDescendants(sid, 'done'));
       }
 
       return next;
@@ -185,7 +189,7 @@ export function useTasks() {
     addTask,
     updateTask,
     deleteTask,
-    toggleComplete,
+    toggleComplete: cycleStatus, // Keep alias for compatibility or update callers
     addCategory,
     deleteCategory,
     exportToJson,

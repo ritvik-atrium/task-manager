@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState } from 'react';
@@ -11,7 +12,8 @@ import {
   CheckCircle2, 
   Circle, 
   MoreVertical,
-  Edit2
+  Edit2,
+  Clock
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -44,12 +46,24 @@ export function TaskItem({
   
   const hasSubtasks = task.subtaskIds.length > 0;
 
+  const getStatusIcon = () => {
+    switch (task.status) {
+      case 'done':
+        return <CheckCircle2 className="h-5 w-5 text-accent shrink-0" />;
+      case 'in-progress':
+        return <Clock className="h-5 w-5 text-primary shrink-0 animate-pulse" />;
+      case 'todo':
+      default:
+        return <Circle className="h-5 w-5 text-muted-foreground shrink-0" />;
+    }
+  };
+
   return (
     <div className="flex flex-col">
       <div 
         className={cn(
           "group flex items-center py-2 px-3 rounded-lg hover:bg-white/50 transition-all duration-200 border border-transparent hover:border-border/50",
-          task.completed && "opacity-60"
+          task.status === 'done' && "opacity-60"
         )}
         style={{ marginLeft: `${depth * 20}px` }}
       >
@@ -69,19 +83,17 @@ export function TaskItem({
           <div 
             className="cursor-pointer flex items-center"
             onClick={() => onToggle(task.id)}
+            title={`Status: ${task.status.replace('-', ' ')} (Click to cycle)`}
           >
-            {task.completed ? (
-              <CheckCircle2 className="h-5 w-5 text-accent shrink-0" />
-            ) : (
-              <Circle className="h-5 w-5 text-muted-foreground shrink-0" />
-            )}
+            {getStatusIcon()}
           </div>
 
           <div className="flex flex-col min-w-0 flex-1 ml-1">
             <span 
               className={cn(
                 "text-sm font-medium truncate",
-                task.completed && "line-through text-muted-foreground"
+                task.status === 'done' && "line-through text-muted-foreground",
+                task.status === 'in-progress' && "text-primary"
               )}
             >
               {task.title}

@@ -1,4 +1,6 @@
 
+export type TaskStatus = 'todo' | 'in-progress' | 'done';
+
 export interface Category {
   id: string;
   name: string;
@@ -9,7 +11,7 @@ export interface Task {
   id: string;
   title: string;
   description?: string;
-  completed: boolean;
+  status: TaskStatus;
   categoryId: string;
   parentId?: string; // If undefined, it's a top-level task
   subtaskIds: string[];
