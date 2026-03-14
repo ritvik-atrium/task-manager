@@ -129,7 +129,7 @@ export default function TaskNest() {
       setTimeout(() => {
         setTaskStatus(targetId, 'todo', true);
         setUnmarkTargetId(null);
-      }, 50);
+      }, 150);
     }
   };
 
@@ -140,7 +140,7 @@ export default function TaskNest() {
       setTimeout(() => {
         setTaskStatus(targetId, 'todo', false);
         setUnmarkTargetId(null);
-      }, 50);
+      }, 150);
     }
   };
 
@@ -160,15 +160,17 @@ export default function TaskNest() {
       setIsSelectionDialogOpen(false);
       
       // 2. Wait for Dialog to clean up the 'pointer-events: none' from body
+      // We use 200ms here to be extra safe that the DOM overlay is gone
       setTimeout(() => {
         const updates = [
           { id: targetId, status: 'todo' as TaskStatus, recursive: false },
-          ...selectedIds.map(id => ({ id, status: 'todo' as TaskStatus, recursive: false }))
+          // Selected subtasks are reset RECURSIVELY to ensure children of children are handled
+          ...selectedIds.map(id => ({ id, status: 'todo' as TaskStatus, recursive: true }))
         ];
         
         setMultipleTasksStatus(updates);
         setUnmarkTargetId(null);
-      }, 100);
+      }, 200);
     }
   };
 
@@ -404,7 +406,7 @@ export default function TaskNest() {
           onClose={() => {
             setIsSelectionDialogOpen(false);
             // Wait for close transition before clearing target
-            setTimeout(() => setUnmarkTargetId(null), 150);
+            setTimeout(() => setUnmarkTargetId(null), 250);
           }}
           parentTask={unmarkTargetId ? tasks[unmarkTargetId] : null}
           allTasks={tasks}
@@ -415,7 +417,7 @@ export default function TaskNest() {
           setIsUnmarkPromptOpen(open);
           if (!open && !isSelectionDialogOpen) {
             // Only clear target if we're not transitioning
-            setTimeout(() => setUnmarkTargetId(null), 150);
+            setTimeout(() => setUnmarkTargetId(null), 250);
           }
         }}>
           <AlertDialogContent className="sm:max-w-[450px]">
