@@ -409,7 +409,10 @@ export default function TaskNest() {
 
         <TaskDialog 
           isOpen={isTaskDialogOpen}
-          onClose={() => setIsTaskDialogOpen(false)}
+          onClose={() => {
+            setIsTaskDialogOpen(false);
+            setTaskToEdit(undefined);
+          }}
           onSave={saveTask}
           taskToEdit={taskToEdit}
         />

@@ -56,7 +56,9 @@ export function TaskDialog({ isOpen, onClose, onSave, taskToEdit }: TaskDialogPr
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={(open) => {
+      if (!open) onClose();
+    }}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>{taskToEdit ? 'Edit Task' : 'New Task'}</DialogTitle>
