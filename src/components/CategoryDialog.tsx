@@ -6,24 +6,29 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { LifeArea } from '@/types/task';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface CategoryDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (name: string, color: string) => void;
+  onSave: (name: string, color: string, area: LifeArea) => void;
 }
 
 const COLORS = [
   '#1F83A7', '#3DBA8C', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#6366f1'
 ];
 
+const AREAS: LifeArea[] = ['Personal', 'Professional', 'Social', 'Spiritual'];
+
 export function CategoryDialog({ isOpen, onClose, onSave }: CategoryDialogProps) {
   const [name, setName] = useState('');
   const [color, setColor] = useState(COLORS[0]);
+  const [area, setArea] = useState<LifeArea>('Personal');
 
   const handleSave = () => {
     if (name.trim()) {
-      onSave(name, color);
+      onSave(name, color, area);
       setName('');
       onClose();
     }
@@ -43,9 +48,20 @@ export function CategoryDialog({ isOpen, onClose, onSave }: CategoryDialogProps)
               value={name} 
               onChange={(e) => setName(e.target.value)} 
               placeholder="Work, Life, Study..."
-              autoFocus
-              onKeyDown={(e) => e.key === 'Enter' && handleSave()}
             />
+          </div>
+          <div className="grid gap-2">
+            <Label>Area of Life</Label>
+            <Select value={area} onValueChange={(v) => setArea(v as LifeArea)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select Area" />
+              </SelectTrigger>
+              <SelectContent>
+                {AREAS.map(a => (
+                  <SelectItem key={a} value={a}>{a}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="grid gap-2">
             <Label>Color</Label>

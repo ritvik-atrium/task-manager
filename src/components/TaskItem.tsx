@@ -1,6 +1,7 @@
+
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Task } from '@/types/task';
 import { cn } from '@/lib/utils';
 import { 
@@ -12,7 +13,8 @@ import {
   Circle, 
   MoreVertical,
   Edit2,
-  Clock
+  Clock,
+  Calendar
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -21,6 +23,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { differenceInDays, isPast, isToday } from 'date-fns';
 
 interface TaskItemProps {
   task: Task;
@@ -42,17 +45,31 @@ export function TaskItem({
   depth = 0 
 }: TaskItemProps) {
   const [isExpanded, setIsExpanded] = useState(true);
-  
   const hasSubtasks = task.subtaskIds.length > 0;
 
+  const deadlineInfo = useMemo(() => {
+    if (!task.deadline) return null;
+    const days = differenceInDays(task.deadline, new Date());
+    const isOverdue = isPast(task.deadline) && !isToday(task.deadline);
+    
+    let colorClass = "";
+    if (task.status === 'done') {
+      colorClass = "border-accent bg-accent/5";
+    } else if (days <= 3 || isOverdue) {
+      colorClass = "border-red-500 bg-red-50";
+    } else if (days <= 7) {
+      colorClass = "border-orange-500 bg-orange-50";
+    }
+
+    return { days, isOverdue, colorClass };
+  }, [task.deadline, task.status]);
+
   const getStatusIcon = () => {
-    const status = task.status || 'todo';
-    switch (status) {
+    switch (task.status) {
       case 'done':
         return <CheckCircle2 className="h-5 w-5 text-accent shrink-0" />;
       case 'in-progress':
         return <Clock className="h-5 w-5 text-primary shrink-0 animate-pulse" />;
-      case 'todo':
       default:
         return <Circle className="h-5 w-5 text-muted-foreground shrink-0" />;
     }
@@ -62,8 +79,9 @@ export function TaskItem({
     <div className="flex flex-col">
       <div 
         className={cn(
-          "group flex items-center py-2 px-3 rounded-lg hover:bg-white/50 transition-all duration-200 border border-transparent hover:border-border/50",
-          task.status === 'done' && "opacity-60"
+          "group flex items-center py-2 px-3 rounded-lg hover:bg-white/50 transition-all duration-200 border border-transparent mb-1",
+          deadlineInfo?.colorClass,
+          task.status === 'done' && !deadlineInfo && "opacity-60"
         )}
         style={{ marginLeft: `${depth * 20}px` }}
       >
@@ -83,21 +101,35 @@ export function TaskItem({
           <div 
             className="cursor-pointer flex items-center"
             onClick={() => onToggle(task.id)}
-            title={`Status: ${(task.status || 'todo').replace('-', ' ')} (Click to cycle)`}
+            title={`Status: ${task.status} (Click to cycle)`}
           >
             {getStatusIcon()}
           </div>
 
           <div className="flex flex-col min-w-0 flex-1 ml-1">
-            <span 
-              className={cn(
-                "text-sm font-medium truncate",
-                task.status === 'done' && "line-through text-muted-foreground",
-                task.status === 'in-progress' && "text-primary"
+            <div className="flex items-center gap-2">
+              <span 
+                className={cn(
+                  "text-sm font-medium truncate",
+                  task.status === 'done' && "line-through text-muted-foreground",
+                  task.status === 'in-progress' && "text-primary"
+                )}
+              >
+                {task.title}
+              </span>
+              {task.deadline && (
+                <div className={cn(
+                  "flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full font-bold uppercase",
+                  task.status === 'done' ? "text-accent bg-accent/10" :
+                  deadlineInfo?.days !== undefined && deadlineInfo.days <= 3 ? "text-red-600 bg-red-100" :
+                  deadlineInfo?.days !== undefined && deadlineInfo.days <= 7 ? "text-orange-600 bg-orange-100" :
+                  "text-muted-foreground bg-muted"
+                )}>
+                  <Calendar className="w-2.5 h-2.5" />
+                  {new Date(task.deadline).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                </div>
               )}
-            >
-              {task.title}
-            </span>
+            </div>
             {task.description && (
               <span className="text-xs text-muted-foreground truncate">{task.description}</span>
             )}
@@ -110,7 +142,6 @@ export function TaskItem({
             size="icon"
             className="h-8 w-8 text-accent hover:text-accent hover:bg-accent/10"
             onClick={() => onAddSubtask(task.id)}
-            title="Add Subtask"
           >
             <Plus className="h-4 w-4" />
           </Button>

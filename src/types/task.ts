@@ -1,10 +1,12 @@
 
 export type TaskStatus = 'todo' | 'in-progress' | 'done';
+export type LifeArea = 'Personal' | 'Professional' | 'Social' | 'Spiritual';
 
 export interface Category {
   id: string;
   name: string;
   color: string;
+  area: LifeArea;
 }
 
 export interface Task {
@@ -13,9 +15,10 @@ export interface Task {
   description?: string;
   status: TaskStatus;
   categoryId: string;
-  parentId?: string; // If undefined, it's a top-level task
+  parentId?: string;
   subtaskIds: string[];
   createdAt: number;
+  deadline?: number; // timestamp
 }
 
 export interface TaskStore {

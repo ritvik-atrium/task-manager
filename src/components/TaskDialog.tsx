@@ -8,33 +8,39 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Task } from '@/types/task';
+import { Calendar as CalendarComponent } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { CalendarIcon } from 'lucide-react';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 interface TaskDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (title: string, description: string) => void;
+  onSave: (title: string, description: string, deadline?: number) => void;
   taskToEdit?: Task;
 }
 
 export function TaskDialog({ isOpen, onClose, onSave, taskToEdit }: TaskDialogProps) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [deadline, setDeadline] = useState<Date | undefined>();
 
   useEffect(() => {
     if (taskToEdit) {
       setTitle(taskToEdit.title);
       setDescription(taskToEdit.description || '');
+      setDeadline(taskToEdit.deadline ? new Date(taskToEdit.deadline) : undefined);
     } else {
       setTitle('');
       setDescription('');
+      setDeadline(undefined);
     }
   }, [taskToEdit, isOpen]);
 
   const handleSave = () => {
     if (title.trim()) {
-      onSave(title, description);
-      setTitle('');
-      setDescription('');
+      onSave(title, description, deadline?.getTime());
       onClose();
     }
   };
@@ -54,7 +60,6 @@ export function TaskDialog({ isOpen, onClose, onSave, taskToEdit }: TaskDialogPr
               onChange={(e) => setTitle(e.target.value)} 
               placeholder="What needs to be done?"
               autoFocus
-              onKeyDown={(e) => e.key === 'Enter' && handleSave()}
             />
           </div>
           <div className="grid gap-2">
@@ -65,6 +70,31 @@ export function TaskDialog({ isOpen, onClose, onSave, taskToEdit }: TaskDialogPr
               onChange={(e) => setDescription(e.target.value)} 
               placeholder="Add some details..."
             />
+          </div>
+          <div className="grid gap-2">
+            <Label>Deadline (Optional)</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant={"outline"}
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !deadline && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {deadline ? format(deadline, "PPP") : <span>Pick a date</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0">
+                <CalendarComponent
+                  mode="single"
+                  selected={deadline}
+                  onSelect={setDeadline}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
           </div>
         </div>
         <DialogFooter>

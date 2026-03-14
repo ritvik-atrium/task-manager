@@ -2,14 +2,15 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
-import { Task, Category, TaskStore, TaskStatus } from '@/types/task';
+import { Task, Category, TaskStore, TaskStatus, LifeArea } from '@/types/task';
 
-const STORAGE_KEY = 'tasknest_data';
+const STORAGE_KEY = 'tasknest_data_v2';
 
 const DEFAULT_CATEGORIES: Category[] = [
-  { id: 'cat-1', name: 'Work', color: '#1F83A7' },
-  { id: 'cat-2', name: 'Personal', color: '#3DBA8C' },
-  { id: 'cat-3', name: 'Shopping', color: '#f59e0b' },
+  { id: 'cat-1', name: 'Work', color: '#1F83A7', area: 'Professional' },
+  { id: 'cat-2', name: 'Health', color: '#3DBA8C', area: 'Personal' },
+  { id: 'cat-3', name: 'Family', color: '#f59e0b', area: 'Social' },
+  { id: 'cat-4', name: 'Meditation', color: '#8b5cf6', area: 'Spiritual' },
 ];
 
 export function useTasks() {
@@ -18,27 +19,12 @@ export function useTasks() {
   const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
 
-  // Load from local storage
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
       try {
         const parsed: TaskStore = JSON.parse(saved);
-        
-        // Migration: Ensure all tasks have a status field (handling legacy boolean 'completed')
-        const rawTasks = parsed.tasks || {};
-        const migratedTasks: Record<string, Task> = {};
-        
-        Object.keys(rawTasks).forEach(id => {
-          const task = rawTasks[id];
-          if (!task.status) {
-            const isDone = (task as any).completed === true;
-            task.status = isDone ? 'done' : 'todo';
-          }
-          migratedTasks[id] = task;
-        });
-
-        setTasks(migratedTasks);
+        setTasks(parsed.tasks || {});
         setCategories(parsed.categories || DEFAULT_CATEGORIES);
       } catch (e) {
         console.error("Failed to parse saved data", e);
@@ -47,14 +33,13 @@ export function useTasks() {
     setIsLoaded(true);
   }, []);
 
-  // Save to local storage
   useEffect(() => {
     if (isLoaded) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify({ tasks, categories }));
     }
   }, [tasks, categories, isLoaded]);
 
-  const addTask = useCallback((title: string, parentId?: string, categoryId?: string, description?: string) => {
+  const addTask = useCallback((title: string, parentId?: string, categoryId?: string, description?: string, deadline?: number) => {
     const id = crypto.randomUUID();
     const taskCategoryId = categoryId || activeCategoryId || categories[0]?.id;
     
@@ -69,6 +54,7 @@ export function useTasks() {
       parentId,
       subtaskIds: [],
       createdAt: Date.now(),
+      deadline,
     };
 
     setTasks(prev => {
@@ -101,7 +87,6 @@ export function useTasks() {
       if (!taskToDelete) return prev;
 
       const next = { ...prev };
-      
       const deleteRecursive = (taskId: string) => {
         const subIds = next[taskId]?.subtaskIds || [];
         subIds.forEach(deleteRecursive);
@@ -122,11 +107,7 @@ export function useTasks() {
 
   const setTaskStatus = useCallback((id: string, nextStatus: TaskStatus, recursive: boolean = false) => {
     setTasks(prev => {
-      const task = prev[id];
-      if (!task) return prev;
-
       const next = { ...prev };
-
       const updateDescendants = (tid: string, status: TaskStatus) => {
         const t = next[tid];
         if (!t) return;
@@ -134,12 +115,13 @@ export function useTasks() {
         t.subtaskIds.forEach(sid => updateDescendants(sid, status));
       };
 
+      const task = next[id];
+      if (!task) return next;
+      
       next[id] = { ...task, status: nextStatus };
-
       if (recursive || nextStatus === 'done') {
         task.subtaskIds.forEach(sid => updateDescendants(sid, nextStatus));
       }
-
       return next;
     });
   }, []);
@@ -147,7 +129,6 @@ export function useTasks() {
   const setMultipleTasksStatus = useCallback((updates: { id: string, status: TaskStatus, recursive?: boolean }[]) => {
     setTasks(prev => {
       const next = { ...prev };
-
       const updateDescendants = (tid: string, status: TaskStatus) => {
         const t = next[tid];
         if (!t) return;
@@ -158,21 +139,18 @@ export function useTasks() {
       updates.forEach(({ id, status, recursive }) => {
         const task = next[id];
         if (!task) return;
-
         next[id] = { ...task, status: status };
-
         if (recursive || status === 'done') {
           task.subtaskIds.forEach(sid => updateDescendants(sid, status));
         }
       });
-
       return next;
     });
   }, []);
 
-  const addCategory = useCallback((name: string, color: string) => {
+  const addCategory = useCallback((name: string, color: string, area: LifeArea) => {
     const id = crypto.randomUUID();
-    const newCategory = { id, name, color };
+    const newCategory: Category = { id, name, color, area };
     setCategories(prev => [...prev, newCategory]);
     return id;
   }, []);
