@@ -52,14 +52,16 @@ export function TaskDialog({ isOpen, onClose, onSave, taskToEdit }: TaskDialogPr
       return;
     }
     
+    // Capture state values before cleanup
     const t = title;
     const d = description;
     const dl = deadline.getTime();
 
-    // Close first to ensure Radix cleanup happens before the heavy state re-render
+    // CRITICAL: Close first to ensure Radix cleanup (pointer-events) completes 
+    // before the heavy main component re-render triggered by onSave
     onClose();
     
-    // Defer the save to avoid interaction locks
+    // Defer the save to allow the browser to restore UI interactivity
     setTimeout(() => {
       onSave(t, d, dl);
     }, 50);
@@ -127,7 +129,7 @@ export function TaskDialog({ isOpen, onClose, onSave, taskToEdit }: TaskDialogPr
                     if (date) {
                       setDeadline(date);
                       if (error) setError(null);
-                      setIsCalendarOpen(false);
+                      setIsCalendarOpen(false); // Close popover after selection
                     }
                   }}
                   initialFocus
