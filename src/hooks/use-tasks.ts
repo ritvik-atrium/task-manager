@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
@@ -31,7 +32,6 @@ export function useTasks() {
         Object.keys(rawTasks).forEach(id => {
           const task = rawTasks[id];
           if (!task.status) {
-            // Check for legacy 'completed' boolean if it existed
             const isDone = (task as any).completed === true;
             task.status = isDone ? 'done' : 'todo';
           }
@@ -102,14 +102,12 @@ export function useTasks() {
 
       const next = { ...prev };
       
-      // Recursive delete subtasks
       const deleteRecursive = (taskId: string) => {
         const subIds = next[taskId]?.subtaskIds || [];
         subIds.forEach(deleteRecursive);
         delete next[taskId];
       };
 
-      // Remove from parent's subtask list
       if (taskToDelete.parentId && next[taskToDelete.parentId]) {
         next[taskToDelete.parentId] = {
           ...next[taskToDelete.parentId],
@@ -118,6 +116,28 @@ export function useTasks() {
       }
 
       deleteRecursive(id);
+      return next;
+    });
+  }, []);
+
+  const setTaskStatus = useCallback((id: string, nextStatus: TaskStatus, recursive: boolean = false) => {
+    setTasks(prev => {
+      const task = prev[id];
+      if (!task) return prev;
+
+      const next = { ...prev, [id]: { ...task, status: nextStatus } };
+
+      const updateDescendants = (tid: string, status: TaskStatus) => {
+        const t = next[tid];
+        if (!t) return;
+        next[tid] = { ...t, status: status };
+        t.subtaskIds.forEach(sid => updateDescendants(sid, status));
+      };
+
+      if (recursive || nextStatus === 'done') {
+        task.subtaskIds.forEach(sid => updateDescendants(sid, nextStatus));
+      }
+
       return next;
     });
   }, []);
@@ -134,22 +154,10 @@ export function useTasks() {
       else if (currentStatus === 'in-progress') nextStatus = 'done';
       else nextStatus = 'todo';
 
-      const next = { ...prev, [id]: { ...task, status: nextStatus } };
-
-      // Helper to update all descendants
-      const updateDescendants = (tid: string, status: TaskStatus) => {
-        const t = next[tid];
-        if (!t) return;
-        next[tid] = { ...t, status: status };
-        t.subtaskIds.forEach(sid => updateDescendants(sid, status));
-      };
-
-      // If completing, complete all children
-      if (nextStatus === 'done') {
-        task.subtaskIds.forEach(sid => updateDescendants(sid, 'done'));
-      }
-
-      return next;
+      // We handle the update logic via the setTaskStatus helper to keep things dry
+      // but we return the prev state here to let the component layer decide 
+      // if it needs a prompt before calling setTaskStatus for the 'todo' reset
+      return prev; 
     });
   }, []);
 
@@ -205,7 +213,7 @@ export function useTasks() {
     addTask,
     updateTask,
     deleteTask,
-    toggleComplete: cycleStatus,
+    setTaskStatus,
     addCategory,
     deleteCategory,
     exportToJson,

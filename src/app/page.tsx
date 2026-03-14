@@ -21,9 +21,19 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { Task } from '@/types/task';
+import { Task, TaskStatus } from '@/types/task';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function TaskNest() {
   const {
@@ -34,7 +44,7 @@ export default function TaskNest() {
     addTask,
     updateTask,
     deleteTask,
-    toggleComplete,
+    setTaskStatus,
     addCategory,
     deleteCategory,
     exportToJson,
@@ -47,6 +57,10 @@ export default function TaskNest() {
   const [taskToEdit, setTaskToEdit] = useState<Task | undefined>();
   const [pendingParentId, setPendingParentId] = useState<string | undefined>();
   const [searchQuery, setSearchQuery] = useState('');
+  
+  // States for the recursive unmark prompt
+  const [isUnmarkPromptOpen, setIsUnmarkPromptOpen] = useState(false);
+  const [unmarkTargetId, setUnmarkTargetId] = useState<string | null>(null);
 
   const activeCategory = useMemo(() => 
     categories.find(c => c.id === activeCategoryId) || categories[0],
@@ -56,14 +70,12 @@ export default function TaskNest() {
   const filteredRootTasks = useMemo(() => {
     if (!activeCategory) return [];
     
-    // Get all tasks for this category that have NO parent (root tasks)
     const categoryTasks = Object.values(tasks).filter(t => 
       t.categoryId === activeCategory.id && !t.parentId
     );
 
     if (!searchQuery) return categoryTasks;
 
-    // If searching, we show any task that matches, but we flatten them slightly
     return Object.values(tasks).filter(t => 
       t.categoryId === activeCategory.id && 
       (t.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -85,6 +97,34 @@ export default function TaskNest() {
       progress: all.length ? Math.round((completed / all.length) * 100) : 0 
     };
   }, [tasks, activeCategory]);
+
+  const handleToggleTaskStatus = (id: string) => {
+    const task = tasks[id];
+    if (!task) return;
+
+    const currentStatus = task.status || 'todo';
+    let nextStatus: TaskStatus;
+
+    if (currentStatus === 'todo') nextStatus = 'in-progress';
+    else if (currentStatus === 'in-progress') nextStatus = 'done';
+    else nextStatus = 'todo';
+
+    // If moving from 'done' back to 'todo' and there are subtasks, prompt for recursive reset
+    if (currentStatus === 'done' && nextStatus === 'todo' && task.subtaskIds.length > 0) {
+      setUnmarkTargetId(id);
+      setIsUnmarkPromptOpen(true);
+    } else {
+      setTaskStatus(id, nextStatus);
+    }
+  };
+
+  const confirmUnmark = (recursive: boolean) => {
+    if (unmarkTargetId) {
+      setTaskStatus(unmarkTargetId, 'todo', recursive);
+      setUnmarkTargetId(null);
+      setIsUnmarkPromptOpen(false);
+    }
+  };
 
   const handleAddTask = (parentId?: string) => {
     setTaskToEdit(undefined);
@@ -205,7 +245,6 @@ export default function TaskNest() {
         </Sidebar>
 
         <main className="flex-1 flex flex-col bg-background p-6 lg:p-10 overflow-auto">
-          {/* Header */}
           <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
             <div>
               <div className="flex items-center gap-2 text-primary font-semibold mb-1">
@@ -237,9 +276,7 @@ export default function TaskNest() {
             </div>
           </header>
 
-          {/* Main Content Area */}
           <div className="flex-1 flex flex-col min-h-0">
-            {/* Stats Bar */}
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-8">
               <div className="bg-white p-4 rounded-2xl shadow-sm border border-border/50">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">New</p>
@@ -270,7 +307,6 @@ export default function TaskNest() {
               </div>
             </div>
 
-            {/* Task List */}
             <div className="flex-1 bg-white/60 backdrop-blur-sm rounded-3xl p-6 lg:p-8 shadow-sm border border-border/50 overflow-auto">
               {filteredRootTasks.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center text-center p-10 opacity-50">
@@ -292,7 +328,7 @@ export default function TaskNest() {
                       key={task.id}
                       task={task}
                       allTasks={tasks}
-                      onToggle={toggleComplete}
+                      onToggle={handleToggleTaskStatus}
                       onDelete={deleteTask}
                       onAddSubtask={handleAddTask}
                       onEditTask={handleEditTask}
@@ -316,6 +352,21 @@ export default function TaskNest() {
           onClose={() => setIsCategoryDialogOpen(false)}
           onSave={(name, color) => addCategory(name, color)}
         />
+
+        <AlertDialog open={isUnmarkPromptOpen} onOpenChange={setIsUnmarkPromptOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Reset Subtasks?</AlertDialogTitle>
+              <AlertDialogDescription>
+                You're moving a completed task back to "New". Do you also want to mark all its subtasks as "New"?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={() => confirmUnmark(false)}>Keep Subtasks Done</AlertDialogCancel>
+              <AlertDialogAction onClick={() => confirmUnmark(true)}>Reset All Subtasks</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </SidebarProvider>
   );
