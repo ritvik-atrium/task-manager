@@ -125,8 +125,11 @@ export default function TaskNest() {
     if (unmarkTargetId) {
       const targetId = unmarkTargetId;
       setIsUnmarkPromptOpen(false);
-      setTaskStatus(targetId, 'todo', true);
-      setUnmarkTargetId(null);
+      // Ensure dialog cleanup happens before heavy state updates
+      setTimeout(() => {
+        setTaskStatus(targetId, 'todo', true);
+        setUnmarkTargetId(null);
+      }, 50);
     }
   };
 
@@ -134,32 +137,38 @@ export default function TaskNest() {
     if (unmarkTargetId) {
       const targetId = unmarkTargetId;
       setIsUnmarkPromptOpen(false);
-      setTaskStatus(targetId, 'todo', false);
-      setUnmarkTargetId(null);
+      setTimeout(() => {
+        setTaskStatus(targetId, 'todo', false);
+        setUnmarkTargetId(null);
+      }, 50);
     }
   };
 
   const openSelectionDialog = () => {
     setIsUnmarkPromptOpen(false);
-    // Use a small timeout to ensure the AlertDialog closes completely before opening the next dialog
-    // This prevents focus trapping and "unclickable" issues in Radix UI
+    // Longer timeout to ensure first dialog is fully unmounted/cleaned up
     setTimeout(() => {
       setIsSelectionDialogOpen(true);
-    }, 150);
+    }, 250);
   };
 
   const handlePartialUnmark = (selectedIds: string[]) => {
     if (unmarkTargetId) {
       const targetId = unmarkTargetId;
+      
+      // 1. Close the dialog immediately
       setIsSelectionDialogOpen(false);
       
-      const updates = [
-        { id: targetId, status: 'todo' as TaskStatus, recursive: false },
-        ...selectedIds.map(id => ({ id, status: 'todo' as TaskStatus, recursive: false }))
-      ];
-      
-      setMultipleTasksStatus(updates);
-      setUnmarkTargetId(null);
+      // 2. Wait for Dialog to clean up the 'pointer-events: none' from body
+      setTimeout(() => {
+        const updates = [
+          { id: targetId, status: 'todo' as TaskStatus, recursive: false },
+          ...selectedIds.map(id => ({ id, status: 'todo' as TaskStatus, recursive: false }))
+        ];
+        
+        setMultipleTasksStatus(updates);
+        setUnmarkTargetId(null);
+      }, 100);
     }
   };
 
@@ -394,7 +403,8 @@ export default function TaskNest() {
           isOpen={isSelectionDialogOpen}
           onClose={() => {
             setIsSelectionDialogOpen(false);
-            setUnmarkTargetId(null);
+            // Wait for close transition before clearing target
+            setTimeout(() => setUnmarkTargetId(null), 150);
           }}
           parentTask={unmarkTargetId ? tasks[unmarkTargetId] : null}
           allTasks={tasks}
@@ -403,9 +413,9 @@ export default function TaskNest() {
 
         <AlertDialog open={isUnmarkPromptOpen} onOpenChange={(open) => {
           setIsUnmarkPromptOpen(open);
-          if (!open) {
-            // Only clear target if we're not transitioning to the selection dialog
-            if (!isSelectionDialogOpen) setUnmarkTargetId(null);
+          if (!open && !isSelectionDialogOpen) {
+            // Only clear target if we're not transitioning
+            setTimeout(() => setUnmarkTargetId(null), 150);
           }
         }}>
           <AlertDialogContent className="sm:max-w-[450px]">

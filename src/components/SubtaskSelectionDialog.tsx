@@ -31,7 +31,7 @@ export function SubtaskSelectionDialog({
     .filter(Boolean) || [];
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && subtasks.length > 0) {
       // By default, select all completed subtasks
       setSelectedIds(subtasks.filter(t => t.status === 'done').map(t => t.id));
     }
@@ -45,13 +45,12 @@ export function SubtaskSelectionDialog({
 
   const handleConfirm = () => {
     onConfirm(selectedIds);
-    onClose();
   };
 
   if (!parentTask) return null;
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Select Subtasks to Reset</DialogTitle>
