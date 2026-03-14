@@ -46,6 +46,7 @@ export default function TaskNest() {
     updateTask,
     deleteTask,
     setTaskStatus,
+    setMultipleTasksStatus,
     addCategory,
     deleteCategory,
     exportToJson,
@@ -143,13 +144,13 @@ export default function TaskNest() {
 
   const handlePartialUnmark = (selectedIds: string[]) => {
     if (unmarkTargetId) {
-      // First unmark the parent
-      setTaskStatus(unmarkTargetId, 'todo', false);
-      // Then unmark only the selected ones
-      selectedIds.forEach(id => {
-        setTaskStatus(id, 'todo', false);
-      });
+      const updates = [
+        { id: unmarkTargetId, status: 'todo' as TaskStatus, recursive: false },
+        ...selectedIds.map(id => ({ id, status: 'todo' as TaskStatus, recursive: false }))
+      ];
+      setMultipleTasksStatus(updates);
       setUnmarkTargetId(null);
+      setIsSelectionDialogOpen(false);
     }
   };
 
@@ -382,13 +383,19 @@ export default function TaskNest() {
 
         <SubtaskSelectionDialog
           isOpen={isSelectionDialogOpen}
-          onClose={() => setIsSelectionDialogOpen(false)}
+          onClose={() => {
+            setIsSelectionDialogOpen(false);
+            setUnmarkTargetId(null);
+          }}
           parentTask={unmarkTargetId ? tasks[unmarkTargetId] : null}
           allTasks={tasks}
           onConfirm={handlePartialUnmark}
         />
 
-        <AlertDialog open={isUnmarkPromptOpen} onOpenChange={setIsUnmarkPromptOpen}>
+        <AlertDialog open={isUnmarkPromptOpen} onOpenChange={(open) => {
+          setIsUnmarkPromptOpen(open);
+          if (!open) setUnmarkTargetId(null);
+        }}>
           <AlertDialogContent className="sm:max-w-[450px]">
             <AlertDialogHeader>
               <AlertDialogTitle>Reset Subtasks?</AlertDialogTitle>

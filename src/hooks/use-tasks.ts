@@ -142,22 +142,29 @@ export function useTasks() {
     });
   }, []);
 
-  const cycleStatus = useCallback((id: string) => {
+  const setMultipleTasksStatus = useCallback((updates: { id: string, status: TaskStatus, recursive?: boolean }[]) => {
     setTasks(prev => {
-      const task = prev[id];
-      if (!task) return prev;
-      
-      let nextStatus: TaskStatus;
-      const currentStatus = task.status || 'todo';
-      
-      if (currentStatus === 'todo') nextStatus = 'in-progress';
-      else if (currentStatus === 'in-progress') nextStatus = 'done';
-      else nextStatus = 'todo';
+      const next = { ...prev };
 
-      // We handle the update logic via the setTaskStatus helper to keep things dry
-      // but we return the prev state here to let the component layer decide 
-      // if it needs a prompt before calling setTaskStatus for the 'todo' reset
-      return prev; 
+      const updateDescendants = (tid: string, status: TaskStatus) => {
+        const t = next[tid];
+        if (!t) return;
+        next[tid] = { ...t, status: status };
+        t.subtaskIds.forEach(sid => updateDescendants(sid, status));
+      };
+
+      updates.forEach(({ id, status, recursive }) => {
+        const task = next[id];
+        if (!task) return;
+
+        next[id] = { ...task, status: status };
+
+        if (recursive || status === 'done') {
+          task.subtaskIds.forEach(sid => updateDescendants(sid, status));
+        }
+      });
+
+      return next;
     });
   }, []);
 
@@ -214,6 +221,7 @@ export function useTasks() {
     updateTask,
     deleteTask,
     setTaskStatus,
+    setMultipleTasksStatus,
     addCategory,
     deleteCategory,
     exportToJson,
