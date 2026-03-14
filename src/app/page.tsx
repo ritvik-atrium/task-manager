@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useMemo, useCallback } from 'react';
@@ -61,7 +60,8 @@ export default function TaskNest() {
   const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
   const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
   const [isSelectionDialogOpen, setIsSelectionDialogOpen] = useState(false);
-  const [view, setView] = useState<'list' | 'quadrant' | 'parallel'>('list');
+  // Default view set to 'parallel' as requested
+  const [view, setView] = useState<'list' | 'quadrant' | 'parallel'>('parallel');
   
   const [taskToEdit, setTaskToEdit] = useState<Task | undefined>();
   const [pendingParentId, setPendingParentId] = useState<string | undefined>();
@@ -229,10 +229,10 @@ export default function TaskNest() {
                 {categories.map((cat) => (
                   <SidebarMenuItem key={cat.id}>
                     <SidebarMenuButton 
-                      isActive={activeCategoryId === cat.id || (!activeCategoryId && categories[0]?.id === cat.id)}
+                      isActive={activeCategoryId === cat.id}
                       onClick={() => {
                         setActiveCategoryId(cat.id);
-                        setView('list');
+                        setView('list'); // Click category -> Switch to List View
                       }}
                       className="group flex items-center gap-3 rounded-lg py-5"
                     >
@@ -282,7 +282,9 @@ export default function TaskNest() {
             <div className="min-w-0">
               <div className="flex items-center gap-2 text-primary font-semibold mb-1">
                 <LayoutGrid className="w-4 h-4 shrink-0" />
-                <span className="text-sm uppercase tracking-widest truncate">{view === 'list' ? activeCategory?.name : 'Dashboard'}</span>
+                <span className="text-sm uppercase tracking-widest truncate">
+                  {view === 'list' ? activeCategory?.name : view === 'quadrant' ? 'Dashboard' : 'Scheduling View'}
+                </span>
               </div>
               <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground truncate">
                 My Workspace
@@ -292,14 +294,14 @@ export default function TaskNest() {
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 min-w-0">
               <Tabs value={view} onValueChange={(v) => setView(v as any)} className="w-full sm:w-auto">
                 <TabsList className="bg-white/50 backdrop-blur-sm p-1 h-11 rounded-xl w-full flex">
+                  <TabsTrigger value="parallel" className="flex-1 rounded-lg h-9 gap-2 data-[state=active]:bg-primary data-[state=active]:text-white">
+                    <Columns className="w-4 h-4" /> <span className="hidden xs:inline">Parallel</span>
+                  </TabsTrigger>
                   <TabsTrigger value="list" className="flex-1 rounded-lg h-9 gap-2 data-[state=active]:bg-primary data-[state=active]:text-white">
                     <List className="w-4 h-4" /> <span className="hidden xs:inline">List</span>
                   </TabsTrigger>
                   <TabsTrigger value="quadrant" className="flex-1 rounded-lg h-9 gap-2 data-[state=active]:bg-primary data-[state=active]:text-white">
                     <Grid2X2 className="w-4 h-4" /> <span className="hidden xs:inline">Quadrant</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="parallel" className="flex-1 rounded-lg h-9 gap-2 data-[state=active]:bg-primary data-[state=active]:text-white">
-                    <Columns className="w-4 h-4" /> <span className="hidden xs:inline">Parallel</span>
                   </TabsTrigger>
                 </TabsList>
               </Tabs>
