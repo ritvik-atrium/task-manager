@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
@@ -24,7 +23,14 @@ export function useTasks() {
     if (saved) {
       try {
         const parsed: TaskStore = JSON.parse(saved);
-        setTasks(parsed.tasks || {});
+        // Migration to ensure status exists and deadline is handled
+        const migratedTasks = { ...parsed.tasks };
+        Object.keys(migratedTasks).forEach(id => {
+          if (!migratedTasks[id].status) {
+            migratedTasks[id].status = 'todo';
+          }
+        });
+        setTasks(migratedTasks);
         setCategories(parsed.categories || DEFAULT_CATEGORIES);
       } catch (e) {
         console.error("Failed to parse saved data", e);
@@ -54,7 +60,7 @@ export function useTasks() {
       parentId,
       subtaskIds: [],
       createdAt: Date.now(),
-      deadline,
+      deadline: deadline || Date.now(),
     };
 
     setTasks(prev => {
