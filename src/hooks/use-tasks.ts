@@ -125,7 +125,7 @@ export function useTasks() {
       const task = prev[id];
       if (!task) return prev;
 
-      const next = { ...prev, [id]: { ...task, status: nextStatus } };
+      const next = { ...prev };
 
       const updateDescendants = (tid: string, status: TaskStatus) => {
         const t = next[tid];
@@ -133,6 +133,8 @@ export function useTasks() {
         next[tid] = { ...t, status: status };
         t.subtaskIds.forEach(sid => updateDescendants(sid, status));
       };
+
+      next[id] = { ...task, status: nextStatus };
 
       if (recursive || nextStatus === 'done') {
         task.subtaskIds.forEach(sid => updateDescendants(sid, nextStatus));

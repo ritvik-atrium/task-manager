@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { useTasks } from '@/hooks/use-tasks';
 import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarFooter, SidebarGroup, SidebarGroupLabel, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
 import { TaskItem } from '@/components/TaskItem';
@@ -102,7 +102,7 @@ export default function TaskNest() {
     };
   }, [tasks, activeCategory]);
 
-  const handleToggleTaskStatus = (id: string) => {
+  const handleToggleTaskStatus = useCallback((id: string) => {
     const task = tasks[id];
     if (!task) return;
 
@@ -119,38 +119,47 @@ export default function TaskNest() {
     } else {
       setTaskStatus(id, nextStatus);
     }
-  };
+  }, [tasks, setTaskStatus]);
 
   const confirmUnmarkAll = () => {
     if (unmarkTargetId) {
-      setTaskStatus(unmarkTargetId, 'todo', true);
-      setUnmarkTargetId(null);
+      const targetId = unmarkTargetId;
       setIsUnmarkPromptOpen(false);
+      setTaskStatus(targetId, 'todo', true);
+      setUnmarkTargetId(null);
     }
   };
 
   const confirmUnmarkNone = () => {
     if (unmarkTargetId) {
-      setTaskStatus(unmarkTargetId, 'todo', false);
-      setUnmarkTargetId(null);
+      const targetId = unmarkTargetId;
       setIsUnmarkPromptOpen(false);
+      setTaskStatus(targetId, 'todo', false);
+      setUnmarkTargetId(null);
     }
   };
 
   const openSelectionDialog = () => {
     setIsUnmarkPromptOpen(false);
-    setIsSelectionDialogOpen(true);
+    // Use a small timeout to ensure the AlertDialog closes completely before opening the next dialog
+    // This prevents focus trapping and "unclickable" issues in Radix UI
+    setTimeout(() => {
+      setIsSelectionDialogOpen(true);
+    }, 150);
   };
 
   const handlePartialUnmark = (selectedIds: string[]) => {
     if (unmarkTargetId) {
+      const targetId = unmarkTargetId;
+      setIsSelectionDialogOpen(false);
+      
       const updates = [
-        { id: unmarkTargetId, status: 'todo' as TaskStatus, recursive: false },
+        { id: targetId, status: 'todo' as TaskStatus, recursive: false },
         ...selectedIds.map(id => ({ id, status: 'todo' as TaskStatus, recursive: false }))
       ];
+      
       setMultipleTasksStatus(updates);
       setUnmarkTargetId(null);
-      setIsSelectionDialogOpen(false);
     }
   };
 
@@ -267,7 +276,7 @@ export default function TaskNest() {
             <Separator className="my-4 opacity-50" />
             <div className="flex items-center gap-2 px-2 text-xs text-muted-foreground">
               <Settings2 className="w-3.5 h-3.5" />
-              <span>v1.0.4 Stable</span>
+              <span>v1.0.5 Stable</span>
             </div>
           </SidebarFooter>
         </Sidebar>
@@ -394,7 +403,10 @@ export default function TaskNest() {
 
         <AlertDialog open={isUnmarkPromptOpen} onOpenChange={(open) => {
           setIsUnmarkPromptOpen(open);
-          if (!open) setUnmarkTargetId(null);
+          if (!open) {
+            // Only clear target if we're not transitioning to the selection dialog
+            if (!isSelectionDialogOpen) setUnmarkTargetId(null);
+          }
         }}>
           <AlertDialogContent className="sm:max-w-[450px]">
             <AlertDialogHeader>
