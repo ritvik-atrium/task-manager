@@ -7,6 +7,7 @@ import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarFooter,
 import { TaskItem } from '@/components/TaskItem';
 import { TaskDialog } from '@/components/TaskDialog';
 import { CategoryDialog } from '@/components/CategoryDialog';
+import { SubtaskSelectionDialog } from '@/components/SubtaskSelectionDialog';
 import { Button } from '@/components/ui/button';
 import { 
   Plus, 
@@ -54,6 +55,8 @@ export default function TaskNest() {
 
   const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
   const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
+  const [isSelectionDialogOpen, setIsSelectionDialogOpen] = useState(false);
+  
   const [taskToEdit, setTaskToEdit] = useState<Task | undefined>();
   const [pendingParentId, setPendingParentId] = useState<string | undefined>();
   const [searchQuery, setSearchQuery] = useState('');
@@ -109,7 +112,6 @@ export default function TaskNest() {
     else if (currentStatus === 'in-progress') nextStatus = 'done';
     else nextStatus = 'todo';
 
-    // If moving from 'done' back to 'todo' and there are subtasks, prompt for recursive reset
     if (currentStatus === 'done' && nextStatus === 'todo' && task.subtaskIds.length > 0) {
       setUnmarkTargetId(id);
       setIsUnmarkPromptOpen(true);
@@ -118,11 +120,36 @@ export default function TaskNest() {
     }
   };
 
-  const confirmUnmark = (recursive: boolean) => {
+  const confirmUnmarkAll = () => {
     if (unmarkTargetId) {
-      setTaskStatus(unmarkTargetId, 'todo', recursive);
+      setTaskStatus(unmarkTargetId, 'todo', true);
       setUnmarkTargetId(null);
       setIsUnmarkPromptOpen(false);
+    }
+  };
+
+  const confirmUnmarkNone = () => {
+    if (unmarkTargetId) {
+      setTaskStatus(unmarkTargetId, 'todo', false);
+      setUnmarkTargetId(null);
+      setIsUnmarkPromptOpen(false);
+    }
+  };
+
+  const openSelectionDialog = () => {
+    setIsUnmarkPromptOpen(false);
+    setIsSelectionDialogOpen(true);
+  };
+
+  const handlePartialUnmark = (selectedIds: string[]) => {
+    if (unmarkTargetId) {
+      // First unmark the parent
+      setTaskStatus(unmarkTargetId, 'todo', false);
+      // Then unmark only the selected ones
+      selectedIds.forEach(id => {
+        setTaskStatus(id, 'todo', false);
+      });
+      setUnmarkTargetId(null);
     }
   };
 
@@ -239,7 +266,7 @@ export default function TaskNest() {
             <Separator className="my-4 opacity-50" />
             <div className="flex items-center gap-2 px-2 text-xs text-muted-foreground">
               <Settings2 className="w-3.5 h-3.5" />
-              <span>v1.0.3 Stable</span>
+              <span>v1.0.4 Stable</span>
             </div>
           </SidebarFooter>
         </Sidebar>
@@ -353,17 +380,32 @@ export default function TaskNest() {
           onSave={(name, color) => addCategory(name, color)}
         />
 
+        <SubtaskSelectionDialog
+          isOpen={isSelectionDialogOpen}
+          onClose={() => setIsSelectionDialogOpen(false)}
+          parentTask={unmarkTargetId ? tasks[unmarkTargetId] : null}
+          allTasks={tasks}
+          onConfirm={handlePartialUnmark}
+        />
+
         <AlertDialog open={isUnmarkPromptOpen} onOpenChange={setIsUnmarkPromptOpen}>
-          <AlertDialogContent>
+          <AlertDialogContent className="sm:max-w-[450px]">
             <AlertDialogHeader>
               <AlertDialogTitle>Reset Subtasks?</AlertDialogTitle>
               <AlertDialogDescription>
-                You're moving a completed task back to "New". Do you also want to mark all its subtasks as "New"?
+                You're moving a completed task back to "New". How would you like to handle its subtasks?
               </AlertDialogDescription>
             </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel onClick={() => confirmUnmark(false)}>Keep Subtasks Done</AlertDialogCancel>
-              <AlertDialogAction onClick={() => confirmUnmark(true)}>Reset All Subtasks</AlertDialogAction>
+            <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+              <Button variant="outline" className="sm:flex-1" onClick={confirmUnmarkNone}>
+                Keep All Done
+              </Button>
+              <Button variant="secondary" className="sm:flex-1" onClick={openSelectionDialog}>
+                Choose Specific...
+              </Button>
+              <Button className="sm:flex-1" onClick={confirmUnmarkAll}>
+                Reset All
+              </Button>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
