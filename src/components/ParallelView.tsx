@@ -45,8 +45,8 @@ export function ParallelView({ tasks, categories, onToggle, onDelete, onAddSubta
   };
 
   return (
-    <div className="flex flex-col h-full gap-6">
-      <div className="flex flex-wrap items-center gap-4 bg-white/50 p-4 rounded-2xl border border-border/50">
+    <div className="flex flex-col h-full gap-6 overflow-hidden">
+      <div className="flex flex-wrap items-center gap-4 bg-white/50 p-4 rounded-2xl border border-border/50 shrink-0">
         <div className="flex items-center gap-2">
           <Filter className="w-4 h-4 text-primary" />
           <span className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Filters</span>
@@ -87,8 +87,8 @@ export function ParallelView({ tasks, categories, onToggle, onDelete, onAddSubta
         </Select>
       </div>
 
-      <ScrollArea className="flex-1 w-full pb-4">
-        <div className="flex gap-6 items-start pb-6">
+      <ScrollArea className="flex-1 w-full rounded-2xl">
+        <div className="flex gap-6 items-start pb-6 pr-6 w-max min-w-full">
           {filteredCategories.map(cat => {
             const catTasks = getFilteredTasks(cat.id);
             if (catTasks.length === 0 && filterArea === 'All') return null;
