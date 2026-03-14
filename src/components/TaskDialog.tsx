@@ -25,6 +25,7 @@ export function TaskDialog({ isOpen, onClose, onSave, taskToEdit }: TaskDialogPr
   const [description, setDescription] = useState('');
   const [deadline, setDeadline] = useState<Date | undefined>();
   const [error, setError] = useState<string | null>(null);
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -36,7 +37,7 @@ export function TaskDialog({ isOpen, onClose, onSave, taskToEdit }: TaskDialogPr
       } else {
         setTitle('');
         setDescription('');
-        setDeadline(new Date()); // Default to today
+        setDeadline(new Date()); 
       }
     }
   }, [taskToEdit, isOpen]);
@@ -51,8 +52,17 @@ export function TaskDialog({ isOpen, onClose, onSave, taskToEdit }: TaskDialogPr
       return;
     }
     
-    onSave(title, description, deadline.getTime());
+    const t = title;
+    const d = description;
+    const dl = deadline.getTime();
+
+    // Close first to ensure Radix cleanup happens before the heavy state re-render
     onClose();
+    
+    // Defer the save to avoid interaction locks
+    setTimeout(() => {
+      onSave(t, d, dl);
+    }, 50);
   };
 
   return (
@@ -96,7 +106,7 @@ export function TaskDialog({ isOpen, onClose, onSave, taskToEdit }: TaskDialogPr
           </div>
           <div className="grid gap-2">
             <Label className="font-bold">Deadline *</Label>
-            <Popover>
+            <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
               <PopoverTrigger asChild>
                 <Button
                   variant={"outline"}
@@ -114,8 +124,11 @@ export function TaskDialog({ isOpen, onClose, onSave, taskToEdit }: TaskDialogPr
                   mode="single"
                   selected={deadline}
                   onSelect={(date) => {
-                    setDeadline(date);
-                    if (error) setError(null);
+                    if (date) {
+                      setDeadline(date);
+                      if (error) setError(null);
+                      setIsCalendarOpen(false);
+                    }
                   }}
                   initialFocus
                 />
