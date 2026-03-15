@@ -378,70 +378,74 @@ export default function TaskNest() {
         </Sidebar>
 
         <main className="flex-1 flex flex-col bg-background p-3 sm:p-5 lg:p-8 overflow-y-auto min-w-0">
-          <header className="flex flex-col md:flex-row md:items-end justify-between gap-3 mb-4 sm:mb-6 shrink-0 min-w-0">
-            <div className="min-w-0">
-              <div className="flex items-center gap-2 text-primary font-semibold mb-1">
+          <header className="flex flex-col gap-3 mb-4 sm:mb-5 shrink-0 min-w-0">
+            {/* Row 1: breadcrumb + global actions */}
+            <div className="flex items-center justify-between gap-2 min-w-0">
+              <div className="flex items-center gap-2 text-primary font-semibold min-w-0">
                 <SidebarTrigger className="h-7 w-7 text-primary hover:bg-primary/10 shrink-0" />
-                <LayoutGrid className="w-4 h-4 shrink-0" />
-                <span className="text-sm uppercase tracking-widest truncate">
-                  {view === 'category' ? 'Category' : view === 'area' ? 'Area of Life' : dashboardView === 'list' ? 'List View' : dashboardView === 'quadrant' ? 'Quadrant View' : 'Parallel View'}
+                <LayoutGrid className="w-3.5 h-3.5 shrink-0" />
+                <span className="text-xs uppercase tracking-widest truncate text-muted-foreground">
+                  {view === 'category' ? 'Category' : view === 'area' ? 'Area of Life' : 'Dashboard'}
                 </span>
               </div>
-              <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground truncate">
+              <div className="flex items-center gap-2 shrink-0">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={toggleDark}
+                  className="h-9 w-9 rounded-xl border-none shadow-sm bg-white/50 dark:bg-white/10"
+                >
+                  {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                </Button>
+                <Button
+                  onClick={() => handleAddTask()}
+                  className="h-9 px-4 gap-2 shadow-md shadow-primary/20 bg-primary hover:bg-primary/90 transition-all active:scale-95 rounded-xl font-semibold"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span className="hidden xs:inline">Add Task</span>
+                </Button>
+              </div>
+            </div>
+
+            {/* Row 2: title + view controls */}
+            <div className="flex items-center justify-between gap-3 min-w-0">
+              <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground truncate min-w-0">
                 {view === 'category' ? (activeCategory?.name ?? 'Category') : view === 'area' ? (activeArea ?? 'Area') : dashboardView === 'list' ? 'All Tasks' : dashboardView === 'quadrant' ? 'Priority Matrix' : 'Scheduling Board'}
               </h2>
-            </div>
-            
-            <div className="flex flex-wrap items-center gap-2 min-w-0">
-              {view === 'dashboard' ? (
-                <>
-                  <Tabs value={dashboardView} onValueChange={(v) => setDashboardView(v as any)} className="w-full sm:w-auto">
-                    <TabsList className="bg-white/50 dark:bg-white/10 backdrop-blur-sm p-1 h-11 rounded-xl w-full flex">
-                      <TabsTrigger value="parallel" className="flex-1 rounded-lg h-9 gap-2 data-[state=active]:bg-primary data-[state=active]:text-white">
-                        <Columns className="w-4 h-4" /> <span className="hidden xs:inline">Parallel</span>
-                      </TabsTrigger>
-                      <TabsTrigger value="list" className="flex-1 rounded-lg h-9 gap-2 data-[state=active]:bg-primary data-[state=active]:text-white">
-                        <List className="w-4 h-4" /> <span className="hidden xs:inline">List</span>
-                      </TabsTrigger>
-                      <TabsTrigger value="quadrant" className="flex-1 rounded-lg h-9 gap-2 data-[state=active]:bg-primary data-[state=active]:text-white">
-                        <Grid2X2 className="w-4 h-4" /> <span className="hidden xs:inline">Quadrant</span>
-                      </TabsTrigger>
-                    </TabsList>
-                  </Tabs>
-                  {dashboardView === 'list' && (
-                    <div className="relative w-full sm:w-64">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input
-                        placeholder="Search tasks..."
-                        className="pl-9 h-11 bg-white dark:bg-muted border-none shadow-sm rounded-xl focus:ring-2 focus:ring-primary/20"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                      />
-                    </div>
-                  )}
-                </>
-              ) : (
-                <Button variant="outline" size="sm" className="h-11 px-4 gap-2 rounded-xl bg-white/50 dark:bg-white/10 border-none" onClick={() => setView('dashboard')}>
-                  <ChevronDown className="w-4 h-4 rotate-90" /> Dashboard
-                </Button>
-              )}
-              
-              <Button
-                variant="outline"
-                size="icon"
-                onClick={toggleDark}
-                className="h-11 w-11 rounded-xl border-none shadow-sm bg-white/50 dark:bg-white/10 shrink-0"
-              >
-                {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-              </Button>
-
-              <Button
-                onClick={() => handleAddTask()}
-                className="h-11 px-6 gap-2 shadow-lg shadow-primary/20 bg-primary hover:bg-primary/90 transition-all active:scale-95 rounded-xl font-semibold w-full sm:w-auto shrink-0"
-              >
-                <Plus className="w-5 h-5" />
-                Add Task
-              </Button>
+              <div className="flex items-center gap-2 shrink-0">
+                {view === 'dashboard' ? (
+                  <>
+                    <Tabs value={dashboardView} onValueChange={(v) => setDashboardView(v as any)}>
+                      <TabsList className="bg-white/50 dark:bg-white/10 backdrop-blur-sm p-1 h-9 rounded-xl">
+                        <TabsTrigger value="parallel" className="rounded-lg h-7 gap-1.5 px-3 data-[state=active]:bg-primary data-[state=active]:text-white text-sm">
+                          <Columns className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Parallel</span>
+                        </TabsTrigger>
+                        <TabsTrigger value="list" className="rounded-lg h-7 gap-1.5 px-3 data-[state=active]:bg-primary data-[state=active]:text-white text-sm">
+                          <List className="w-3.5 h-3.5" /> <span className="hidden sm:inline">List</span>
+                        </TabsTrigger>
+                        <TabsTrigger value="quadrant" className="rounded-lg h-7 gap-1.5 px-3 data-[state=active]:bg-primary data-[state=active]:text-white text-sm">
+                          <Grid2X2 className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Quadrant</span>
+                        </TabsTrigger>
+                      </TabsList>
+                    </Tabs>
+                    {dashboardView === 'list' && (
+                      <div className="relative w-44 sm:w-56">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                        <Input
+                          placeholder="Search..."
+                          className="pl-8 h-9 bg-white dark:bg-muted border-none shadow-sm rounded-xl text-sm focus:ring-2 focus:ring-primary/20"
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                        />
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <Button variant="outline" size="sm" className="h-9 px-3 gap-1.5 rounded-xl bg-white/50 dark:bg-white/10 border-none text-sm" onClick={() => setView('dashboard')}>
+                    <ChevronDown className="w-3.5 h-3.5 rotate-90" /> Dashboard
+                  </Button>
+                )}
+              </div>
             </div>
           </header>
 
