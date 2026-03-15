@@ -6,24 +6,27 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Task } from '@/types/task';
+import { Task, Category } from '@/types/task';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon, AlertCircle } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
 interface TaskDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (title: string, description: string, deadline: number) => void;
+  onSave: (title: string, description: string, deadline: number, categoryId: string) => void;
   taskToEdit?: Task;
+  categories?: Category[];
+  defaultCategoryId?: string;
 }
 
-export function TaskDialog({ isOpen, onClose, onSave, taskToEdit }: TaskDialogProps) {
+export function TaskDialog({ isOpen, onClose, onSave, taskToEdit, categories, defaultCategoryId }: TaskDialogProps) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [deadline, setDeadline] = useState<Date | undefined>();
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 
@@ -31,6 +34,7 @@ export function TaskDialog({ isOpen, onClose, onSave, taskToEdit }: TaskDialogPr
   useEffect(() => {
     if (isOpen) {
       setError(null);
+      setIsCalendarOpen(false);
       if (taskToEdit) {
         setTitle(taskToEdit.title);
         setDescription(taskToEdit.description || '');
@@ -38,18 +42,21 @@ export function TaskDialog({ isOpen, onClose, onSave, taskToEdit }: TaskDialogPr
       } else {
         setTitle('');
         setDescription('');
-        setDeadline(new Date()); 
+        setDeadline(new Date());
+        setSelectedCategoryId(defaultCategoryId || categories?.[0]?.id || '');
       }
     }
-  }, [taskToEdit, isOpen]);
+  }, [taskToEdit, isOpen, defaultCategoryId, categories]);
 
-  // Force restore pointer events if they get stuck - emergency safety measure
+  // Radix Dialog sets pointer-events/overflow on body when open.
+  // If the close animation is interrupted by a React re-render, cleanup never fires.
+  // This runs 300ms after close (longer than the 200ms animation) to ensure recovery.
   useEffect(() => {
     if (!isOpen) {
       const timeout = setTimeout(() => {
-        document.body.style.pointerEvents = 'auto';
-        document.body.style.overflow = 'auto';
-      }, 100);
+        document.body.style.removeProperty('pointer-events');
+        document.body.style.removeProperty('overflow');
+      }, 300);
       return () => clearTimeout(timeout);
     }
   }, [isOpen]);
@@ -63,27 +70,16 @@ export function TaskDialog({ isOpen, onClose, onSave, taskToEdit }: TaskDialogPr
       setError("Deadline is required.");
       return;
     }
-    
-    const finalTitle = title;
-    const finalDescription = description;
-    const finalDeadline = deadline.getTime();
 
-    // 1. Close the dialog first to let Radix cleanup begin
+    onSave(title, description, deadline.getTime(), selectedCategoryId);
     onClose();
-    
-    // 2. Defer the heavy state update to the next event loop cycle
-    // This allows the Dialog's unmount/cleanup logic to finish before 
-    // the parent component triggers a massive re-render.
-    setTimeout(() => {
-      onSave(finalTitle, finalDescription, finalDeadline);
-    }, 50);
   };
 
   const handleDateSelect = useCallback((date: Date | undefined) => {
     if (date) {
       setDeadline(date);
       if (error) setError(null);
-      setIsCalendarOpen(false); // Close popover immediately on selection
+      setIsCalendarOpen(false);
     }
   }, [error]);
 
@@ -91,13 +87,7 @@ export function TaskDialog({ isOpen, onClose, onSave, taskToEdit }: TaskDialogPr
     <Dialog open={isOpen} onOpenChange={(open) => {
       if (!open) onClose();
     }}>
-      <DialogContent 
-        className="sm:max-w-[425px]"
-        onPointerDownOutside={(e) => {
-          // Prevent accidental closing if clicking inside the calendar popover
-          if (isCalendarOpen) e.preventDefault();
-        }}
-      >
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>{taskToEdit ? 'Edit Task' : 'New Task'}</DialogTitle>
         </DialogHeader>
@@ -110,13 +100,13 @@ export function TaskDialog({ isOpen, onClose, onSave, taskToEdit }: TaskDialogPr
           )}
           <div className="grid gap-2">
             <Label htmlFor="title" className="font-bold">Title *</Label>
-            <Input 
-              id="title" 
-              value={title} 
+            <Input
+              id="title"
+              value={title}
               onChange={(e) => {
                 setTitle(e.target.value);
                 if (error) setError(null);
-              }} 
+              }}
               placeholder="What needs to be done?"
               autoFocus
               className="rounded-xl border-muted-foreground/20 focus:ring-primary/20"
@@ -124,45 +114,66 @@ export function TaskDialog({ isOpen, onClose, onSave, taskToEdit }: TaskDialogPr
           </div>
           <div className="grid gap-2">
             <Label htmlFor="description" className="font-bold">Description</Label>
-            <Textarea 
-              id="description" 
-              value={description} 
-              onChange={(e) => setDescription(e.target.value)} 
+            <Textarea
+              id="description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
               placeholder="Add some details..."
               className="rounded-xl border-muted-foreground/20 focus:ring-primary/20 min-h-[100px]"
             />
           </div>
+          {!taskToEdit && categories && categories.length > 0 && (
+            <div className="grid gap-2">
+              <Label className="font-bold">Category</Label>
+              <Select value={selectedCategoryId} onValueChange={setSelectedCategoryId}>
+                <SelectTrigger className="rounded-xl border-muted-foreground/20">
+                  <SelectValue placeholder="Select category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map(cat => (
+                    <SelectItem key={cat.id} value={cat.id}>
+                      <div className="flex items-center gap-2">
+                        <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: cat.color }} />
+                        {cat.name}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <div className="grid gap-2">
             <Label className="font-bold">Deadline *</Label>
-            <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant={"outline"}
-                  className={cn(
-                    "w-full justify-start text-left font-normal h-11 rounded-xl border-muted-foreground/20 shadow-none hover:bg-muted/50 transition-colors",
-                    !deadline && "text-muted-foreground"
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4 text-primary" />
-                  {deadline ? format(deadline, "PPP") : <span>Pick a date</span>}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
+            {/* Inline calendar — avoids nested portal/pointer-event conflicts with Radix Dialog */}
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsCalendarOpen(!isCalendarOpen)}
+              className={cn(
+                "w-full justify-start text-left font-normal h-11 rounded-xl border-muted-foreground/20 shadow-none hover:bg-muted/50 transition-colors",
+                !deadline && "text-muted-foreground"
+              )}
+            >
+              <CalendarIcon className="mr-2 h-4 w-4 text-primary" />
+              {deadline ? format(deadline, "PPP") : <span>Pick a date</span>}
+            </Button>
+            {isCalendarOpen && (
+              <div className="w-fit rounded-xl border border-muted-foreground/20 overflow-hidden">
                 <CalendarComponent
                   mode="single"
                   selected={deadline}
                   onSelect={handleDateSelect}
                   initialFocus
-                  disabled={(date) => date < new Date(new Date().setHours(0,0,0,0))}
+                  disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
                 />
-              </PopoverContent>
-            </Popover>
+              </div>
+            )}
           </div>
         </div>
         <DialogFooter className="gap-2 sm:gap-0">
           <Button variant="ghost" onClick={onClose} className="rounded-xl font-bold">Cancel</Button>
-          <Button 
-            onClick={handleSave} 
+          <Button
+            onClick={handleSave}
             className="rounded-xl font-bold shadow-lg shadow-primary/20 bg-primary hover:bg-primary/90"
           >
             {taskToEdit ? 'Save Changes' : 'Create Task'}

@@ -1,18 +1,19 @@
 
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { LifeArea } from '@/types/task';
+import { Category, LifeArea } from '@/types/task';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface CategoryDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (name: string, color: string, area: LifeArea) => void;
+  categoryToEdit?: Category;
 }
 
 const COLORS = [
@@ -21,33 +22,47 @@ const COLORS = [
 
 const AREAS: LifeArea[] = ['Personal', 'Professional', 'Social', 'Spiritual'];
 
-export function CategoryDialog({ isOpen, onClose, onSave }: CategoryDialogProps) {
+export function CategoryDialog({ isOpen, onClose, onSave, categoryToEdit }: CategoryDialogProps) {
   const [name, setName] = useState('');
   const [color, setColor] = useState(COLORS[0]);
   const [area, setArea] = useState<LifeArea>('Personal');
 
+  useEffect(() => {
+    if (isOpen) {
+      if (categoryToEdit) {
+        setName(categoryToEdit.name);
+        setColor(categoryToEdit.color);
+        setArea(categoryToEdit.area);
+      } else {
+        setName('');
+        setColor(COLORS[0]);
+        setArea('Personal');
+      }
+    }
+  }, [isOpen, categoryToEdit]);
+
   const handleSave = () => {
     if (name.trim()) {
-      onSave(name, color, area);
-      setName('');
+      onSave(name.trim(), color, area);
       onClose();
     }
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
       <DialogContent className="sm:max-w-[400px]">
         <DialogHeader>
-          <DialogTitle>New Category</DialogTitle>
+          <DialogTitle>{categoryToEdit ? 'Edit Category' : 'New Category'}</DialogTitle>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
-            <Label htmlFor="name">Name</Label>
-            <Input 
-              id="name" 
-              value={name} 
-              onChange={(e) => setName(e.target.value)} 
+            <Label htmlFor="cat-name">Name</Label>
+            <Input
+              id="cat-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
               placeholder="Work, Life, Study..."
+              autoFocus
             />
           </div>
           <div className="grid gap-2">
@@ -69,6 +84,7 @@ export function CategoryDialog({ isOpen, onClose, onSave }: CategoryDialogProps)
               {COLORS.map(c => (
                 <button
                   key={c}
+                  type="button"
                   className={`w-8 h-8 rounded-full border-2 transition-all ${color === c ? 'border-primary scale-110 shadow-sm' : 'border-transparent'}`}
                   style={{ backgroundColor: c }}
                   onClick={() => setColor(c)}
@@ -79,7 +95,7 @@ export function CategoryDialog({ isOpen, onClose, onSave }: CategoryDialogProps)
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Cancel</Button>
-          <Button onClick={handleSave}>Create Category</Button>
+          <Button onClick={handleSave}>{categoryToEdit ? 'Save Changes' : 'Create Category'}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

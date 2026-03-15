@@ -18,6 +18,7 @@ export interface Task {
   parentId?: string;
   subtaskIds: string[];
   createdAt: number;
+  completedAt?: number; // timestamp, set when status becomes 'done', cleared when unmarked
   deadline?: number; // timestamp
 }
 

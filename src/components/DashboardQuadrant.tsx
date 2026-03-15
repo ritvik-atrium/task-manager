@@ -10,6 +10,7 @@ import { User, Briefcase, Users, Sparkles } from 'lucide-react';
 interface DashboardQuadrantProps {
   tasks: Record<string, Task>;
   categories: Category[];
+  onAreaClick?: (area: LifeArea) => void;
 }
 
 const AREA_ICONS = {
@@ -19,7 +20,7 @@ const AREA_ICONS = {
   Spiritual: <Sparkles className="w-5 h-5" />
 };
 
-export function DashboardQuadrant({ tasks, categories }: DashboardQuadrantProps) {
+export function DashboardQuadrant({ tasks, categories, onAreaClick }: DashboardQuadrantProps) {
   const stats = useMemo(() => {
     const areas: LifeArea[] = ['Personal', 'Professional', 'Social', 'Spiritual'];
     const result: Record<LifeArea, any> = {} as any;
@@ -40,7 +41,7 @@ export function DashboardQuadrant({ tasks, categories }: DashboardQuadrantProps)
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-2">
       {(['Personal', 'Professional', 'Social', 'Spiritual'] as LifeArea[]).map(area => (
-        <Card key={area} className="border-none shadow-md bg-white/80 backdrop-blur-sm overflow-hidden group hover:shadow-lg transition-all">
+        <Card key={area} className="border-none shadow-md bg-white/80 dark:bg-card backdrop-blur-sm overflow-hidden group hover:shadow-lg transition-all cursor-pointer" onClick={() => onAreaClick?.(area)}>
           <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
             <CardTitle className="text-lg font-bold tracking-tight">{area}</CardTitle>
             <div className="p-2 bg-primary/10 text-primary rounded-xl group-hover:bg-primary group-hover:text-white transition-colors">

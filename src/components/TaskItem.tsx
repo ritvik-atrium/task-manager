@@ -56,9 +56,9 @@ export function TaskItem({
     if (task.status === 'done') {
       colorClass = "border-accent bg-accent/5";
     } else if (days <= 3 || isOverdue) {
-      colorClass = "border-red-500 bg-red-50";
+      colorClass = "border-red-500 bg-red-50 dark:bg-red-950/40";
     } else if (days <= 7) {
-      colorClass = "border-orange-500 bg-orange-50";
+      colorClass = "border-orange-500 bg-orange-50 dark:bg-orange-950/40";
     }
 
     return { days, isOverdue, colorClass };
@@ -79,7 +79,7 @@ export function TaskItem({
     <div className="flex flex-col">
       <div 
         className={cn(
-          "group flex items-center py-2 px-3 rounded-lg hover:bg-white/50 transition-all duration-200 border border-transparent mb-1",
+          "group flex items-center py-2 px-3 rounded-lg hover:bg-white/50 dark:hover:bg-white/10 transition-all duration-200 border border-transparent mb-1",
           deadlineInfo?.colorClass,
           task.status === 'done' && !deadlineInfo && "opacity-60"
         )}
@@ -121,8 +121,8 @@ export function TaskItem({
                 <div className={cn(
                   "flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full font-bold uppercase",
                   task.status === 'done' ? "text-accent bg-accent/10" :
-                  deadlineInfo?.days !== undefined && deadlineInfo.days <= 3 ? "text-red-600 bg-red-100" :
-                  deadlineInfo?.days !== undefined && deadlineInfo.days <= 7 ? "text-orange-600 bg-orange-100" :
+                  deadlineInfo?.days !== undefined && deadlineInfo.days <= 3 ? "text-red-600 bg-red-100 dark:bg-red-900/40 dark:text-red-400" :
+                  deadlineInfo?.days !== undefined && deadlineInfo.days <= 7 ? "text-orange-600 bg-orange-100 dark:bg-orange-900/40 dark:text-orange-400" :
                   "text-muted-foreground bg-muted"
                 )}>
                   <Calendar className="w-2.5 h-2.5" />
