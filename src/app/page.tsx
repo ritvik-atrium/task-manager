@@ -55,6 +55,13 @@ export default function TaskNest() {
     setActiveCategoryId,
     addTask,
     updateTask,
+    copyTask,
+    moveTask,
+    moveUnderTask,
+    bulkMoveToCategory,
+    bulkCopyToCategory,
+    bulkMoveUnderTask,
+    bulkCopyUnderTask,
     deleteTask,
     setTaskStatus,
     setMultipleTasksStatus,
@@ -508,10 +515,14 @@ export default function TaskNest() {
                                 key={task.id}
                                 task={task}
                                 allTasks={tasks}
+                                categories={categories}
                                 onToggle={handleToggleTaskStatus}
                                 onDelete={deleteTask}
                                 onAddSubtask={handleAddTask}
                                 onEditTask={handleEditTask}
+                                onMoveTask={moveTask}
+                                onCopyTask={copyTask}
+                                onMoveUnderTask={moveUnderTask}
                               />
                             ))}
                           </div>
@@ -542,21 +553,36 @@ export default function TaskNest() {
                   onDelete={deleteTask}
                   onAddSubtask={handleAddTask}
                   onEditTask={handleEditTask}
+                  onMoveTask={moveTask}
+                  onCopyTask={copyTask}
+                  onMoveUnderTask={moveUnderTask}
+                  onBulkMoveToCategory={bulkMoveToCategory}
+                  onBulkCopyToCategory={bulkCopyToCategory}
+                  onBulkMoveUnderTask={bulkMoveUnderTask}
+                  onBulkCopyUnderTask={bulkCopyUnderTask}
                   onCategoryClick={(catId) => { setActiveCategoryId(catId); setView('category'); }}
                 />
               </div>
             )}
 
             {view === 'category' && activeCategory && (
-              <div className="flex-1 overflow-hidden min-w-0">
+              <div className="flex-1 overflow-y-auto min-w-0">
                 <CategoryView
                   category={activeCategory}
+                  categories={categories}
                   tasks={tasks}
                   onBack={() => setView('dashboard')}
                   onToggle={handleToggleTaskStatus}
                   onDelete={deleteTask}
                   onAddSubtask={handleAddTask}
                   onEditTask={handleEditTask}
+                  onMoveTask={moveTask}
+                  onCopyTask={copyTask}
+                  onMoveUnderTask={moveUnderTask}
+                  onBulkMoveToCategory={bulkMoveToCategory}
+                  onBulkCopyToCategory={bulkCopyToCategory}
+                  onBulkMoveUnderTask={bulkMoveUnderTask}
+                  onBulkCopyUnderTask={bulkCopyUnderTask}
                 />
               </div>
             )}
@@ -572,6 +598,13 @@ export default function TaskNest() {
                   onDelete={deleteTask}
                   onAddSubtask={handleAddTask}
                   onEditTask={handleEditTask}
+                  onMoveTask={moveTask}
+                  onCopyTask={copyTask}
+                  onMoveUnderTask={moveUnderTask}
+                  onBulkMoveToCategory={bulkMoveToCategory}
+                  onBulkCopyToCategory={bulkCopyToCategory}
+                  onBulkMoveUnderTask={bulkMoveUnderTask}
+                  onBulkCopyUnderTask={bulkCopyUnderTask}
                 />
               </div>
             )}

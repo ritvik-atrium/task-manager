@@ -1,13 +1,14 @@
 
 "use client";
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useCallback } from 'react';
 import { Task, Category, LifeArea } from '@/types/task';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { TaskItem } from './TaskItem';
 import { ArrowLeft, User, Briefcase, Users, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { BulkActionBar } from './BulkActionBar';
 
 const AREA_ICONS: Record<LifeArea, React.ReactNode> = {
   Personal: <User className="w-5 h-5" />,
@@ -25,11 +26,24 @@ interface AreaViewProps {
   onDelete: (id: string) => void;
   onAddSubtask: (parentId: string) => void;
   onEditTask: (task: Task) => void;
+  onMoveTask: (taskId: string, newCategoryId: string) => void;
+  onCopyTask?: (taskId: string, targetCategoryId?: string, targetParentId?: string) => void;
+  onMoveUnderTask?: (taskId: string, newParentId: string) => void;
+  onBulkMoveToCategory?: (ids: string[], categoryId: string) => void;
+  onBulkCopyToCategory?: (ids: string[], categoryId: string) => void;
+  onBulkMoveUnderTask?: (ids: string[], parentId: string) => void;
+  onBulkCopyUnderTask?: (ids: string[], parentId: string) => void;
 }
 
-export function AreaView({ area, categories, tasks, onBack, onToggle, onDelete, onAddSubtask, onEditTask }: AreaViewProps) {
-  const areaCategories = useMemo(() => categories.filter(c => c.area === area), [categories, area]);
+export function AreaView({ area, categories, tasks, onBack, onToggle, onDelete, onAddSubtask, onEditTask, onMoveTask, onCopyTask, onMoveUnderTask, onBulkMoveToCategory, onBulkCopyToCategory, onBulkMoveUnderTask, onBulkCopyUnderTask }: AreaViewProps) {
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const toggleSelect = useCallback((id: string) => {
+    setSelectedIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  }, []);
+  const clearSelection = useCallback(() => { setSelectedIds(new Set()); setSelectionMode(false); }, []);
 
+  const areaCategories = useMemo(() => categories.filter(c => c.area === area), [categories, area]);
   const areaTasks = useMemo(() => Object.values(tasks).filter(t => areaCategories.some(c => c.id === t.categoryId)), [tasks, areaCategories]);
 
   const stats = useMemo(() => {
@@ -48,7 +62,7 @@ export function AreaView({ area, categories, tasks, onBack, onToggle, onDelete, 
         <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl hover:bg-primary/10 text-primary" onClick={onBack}>
           <ArrowLeft className="w-5 h-5" />
         </Button>
-        <div className="flex items-center gap-3 min-w-0">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
           <div className="p-2 bg-primary/10 text-primary rounded-xl">
             {AREA_ICONS[area]}
           </div>
@@ -57,6 +71,14 @@ export function AreaView({ area, categories, tasks, onBack, onToggle, onDelete, 
             <p className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">Area of Life</p>
           </div>
         </div>
+        <Button
+          variant={selectionMode ? 'default' : 'outline'}
+          size="sm"
+          className="shrink-0 h-8 text-xs"
+          onClick={() => { setSelectionMode(v => !v); setSelectedIds(new Set()); }}
+        >
+          {selectionMode ? 'Cancel' : 'Select'}
+        </Button>
       </div>
 
       {/* Stats */}
@@ -93,6 +115,20 @@ export function AreaView({ area, categories, tasks, onBack, onToggle, onDelete, 
         <Progress value={stats.progress} className="h-3 bg-muted" />
       </div>
 
+      {/* Bulk action bar */}
+      {selectionMode && (
+        <BulkActionBar
+          selectedIds={selectedIds}
+          allTasks={tasks}
+          categories={categories}
+          onClear={clearSelection}
+          onMoveToCategory={catId => { onBulkMoveToCategory?.(Array.from(selectedIds), catId); clearSelection(); }}
+          onCopyToCategory={catId => { onBulkCopyToCategory?.(Array.from(selectedIds), catId); clearSelection(); }}
+          onMoveUnderTask={parentId => { onBulkMoveUnderTask?.(Array.from(selectedIds), parentId); clearSelection(); }}
+          onCopyUnderTask={parentId => { onBulkCopyUnderTask?.(Array.from(selectedIds), parentId); clearSelection(); }}
+        />
+      )}
+
       {/* Categories with tasks */}
       <div className="flex-1 bg-white/60 dark:bg-card/80 backdrop-blur-sm rounded-3xl p-4 sm:p-6 shadow-sm border border-border/50 overflow-auto min-h-0">
         {areaCategories.length === 0 ? (
@@ -119,10 +155,17 @@ export function AreaView({ area, categories, tasks, onBack, onToggle, onDelete, 
                           key={task.id}
                           task={task}
                           allTasks={tasks}
+                          categories={categories}
                           onToggle={onToggle}
                           onDelete={onDelete}
                           onAddSubtask={onAddSubtask}
                           onEditTask={onEditTask}
+                          onMoveTask={onMoveTask}
+                          onCopyTask={onCopyTask}
+                          onMoveUnderTask={onMoveUnderTask}
+                          selectionMode={selectionMode}
+                          selectedIds={selectedIds}
+                          onSelect={toggleSelect}
                         />
                       ))}
                     </div>

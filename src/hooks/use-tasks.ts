@@ -113,6 +113,185 @@ export function useTasks() {
     });
   }, []);
 
+  const copyTask = useCallback((id: string, targetCategoryId?: string, targetParentId?: string) => {
+    setTasks(prev => {
+      const source = prev[id];
+      if (!source) return prev;
+      const next = { ...prev };
+      const copyRecursive = (taskId: string, newParentId?: string, catId?: string): string => {
+        const t = next[taskId];
+        if (!t) return taskId;
+        const newId = crypto.randomUUID();
+        next[newId] = {
+          ...t,
+          id: newId,
+          categoryId: catId ?? t.categoryId,
+          parentId: newParentId,
+          subtaskIds: [],
+          createdAt: Date.now(),
+        };
+        const newSubIds = t.subtaskIds.map(sid => copyRecursive(sid, newId, catId ?? t.categoryId));
+        next[newId] = { ...next[newId], subtaskIds: newSubIds };
+        return newId;
+      };
+      const effectiveParentId = targetParentId ?? source.parentId ?? undefined;
+      const effectiveCategoryId = targetParentId
+        ? (prev[targetParentId]?.categoryId ?? targetCategoryId)
+        : targetCategoryId;
+      const newRootId = copyRecursive(id, effectiveParentId, effectiveCategoryId);
+      if (effectiveParentId && next[effectiveParentId]) {
+        next[effectiveParentId] = {
+          ...next[effectiveParentId],
+          subtaskIds: [...next[effectiveParentId].subtaskIds, newRootId],
+        };
+      }
+      return next;
+    });
+  }, []);
+
+  const moveUnderTask = useCallback((taskId: string, newParentId: string) => {
+    setTasks(prev => {
+      const task = prev[taskId];
+      const newParent = prev[newParentId];
+      if (!task || !newParent) return prev;
+      // Prevent moving into own descendants
+      const isDescendant = (id: string): boolean => {
+        if (id === taskId) return true;
+        const t = prev[id];
+        return !!t && t.subtaskIds.some(isDescendant);
+      };
+      if (isDescendant(newParentId)) return prev;
+
+      const next = { ...prev };
+      const newCategoryId = newParent.categoryId;
+
+      // Remove from old parent's subtaskIds
+      if (task.parentId && next[task.parentId]) {
+        next[task.parentId] = {
+          ...next[task.parentId],
+          subtaskIds: next[task.parentId].subtaskIds.filter(id => id !== taskId),
+        };
+      }
+
+      // Update categoryId recursively
+      const updateCat = (tid: string) => {
+        if (!next[tid]) return;
+        next[tid] = { ...next[tid], categoryId: newCategoryId };
+        next[tid].subtaskIds.forEach(updateCat);
+      };
+      updateCat(taskId);
+
+      // Update parentId
+      next[taskId] = { ...next[taskId], parentId: newParentId };
+
+      // Add to new parent
+      next[newParentId] = {
+        ...next[newParentId],
+        subtaskIds: [...next[newParentId].subtaskIds, taskId],
+      };
+
+      return next;
+    });
+  }, []);
+
+  const bulkMoveToCategory = useCallback((ids: string[], categoryId: string) => {
+    setTasks(prev => {
+      const next = { ...prev };
+      const moveRec = (taskId: string) => {
+        if (!next[taskId]) return;
+        next[taskId] = { ...next[taskId], categoryId };
+        next[taskId].subtaskIds.forEach(moveRec);
+      };
+      ids.forEach(moveRec);
+      return next;
+    });
+  }, []);
+
+  const bulkCopyToCategory = useCallback((ids: string[], categoryId: string) => {
+    setTasks(prev => {
+      const next = { ...prev };
+      const copyRec = (taskId: string, newParentId?: string, catId?: string): string => {
+        const t = next[taskId];
+        if (!t) return taskId;
+        const newId = crypto.randomUUID();
+        next[newId] = { ...t, id: newId, categoryId: catId ?? t.categoryId, parentId: newParentId, subtaskIds: [], createdAt: Date.now() };
+        next[newId] = { ...next[newId], subtaskIds: t.subtaskIds.map(sid => copyRec(sid, newId, catId ?? t.categoryId)) };
+        return newId;
+      };
+      ids.forEach(id => {
+        const src = prev[id];
+        if (!src) return;
+        const newId = copyRec(id, src.parentId ?? undefined, categoryId);
+        if (src.parentId && next[src.parentId]) {
+          next[src.parentId] = { ...next[src.parentId], subtaskIds: [...next[src.parentId].subtaskIds, newId] };
+        }
+      });
+      return next;
+    });
+  }, []);
+
+  const bulkMoveUnderTask = useCallback((ids: string[], newParentId: string) => {
+    setTasks(prev => {
+      const newParent = prev[newParentId];
+      if (!newParent) return prev;
+      const next = { ...prev };
+      const newCategoryId = newParent.categoryId;
+      const allDescendants = new Set<string>();
+      const collect = (id: string) => { allDescendants.add(id); prev[id]?.subtaskIds.forEach(collect); };
+      ids.forEach(collect);
+      if (allDescendants.has(newParentId)) return prev;
+      ids.forEach(taskId => {
+        const task = next[taskId];
+        if (!task) return;
+        if (task.parentId && next[task.parentId]) {
+          next[task.parentId] = { ...next[task.parentId], subtaskIds: next[task.parentId].subtaskIds.filter(i => i !== taskId) };
+        }
+        const updateCat = (tid: string) => {
+          if (!next[tid]) return;
+          next[tid] = { ...next[tid], categoryId: newCategoryId };
+          next[tid].subtaskIds.forEach(updateCat);
+        };
+        updateCat(taskId);
+        next[taskId] = { ...next[taskId], parentId: newParentId };
+      });
+      next[newParentId] = { ...next[newParentId], subtaskIds: [...next[newParentId].subtaskIds, ...ids.filter(id => next[id])] };
+      return next;
+    });
+  }, []);
+
+  const bulkCopyUnderTask = useCallback((ids: string[], newParentId: string) => {
+    setTasks(prev => {
+      const newParent = prev[newParentId];
+      if (!newParent) return prev;
+      const next = { ...prev };
+      const newCategoryId = newParent.categoryId;
+      const copyRec = (taskId: string, parentId?: string, catId?: string): string => {
+        const t = next[taskId];
+        if (!t) return taskId;
+        const newId = crypto.randomUUID();
+        next[newId] = { ...t, id: newId, categoryId: catId ?? t.categoryId, parentId, subtaskIds: [], createdAt: Date.now() };
+        next[newId] = { ...next[newId], subtaskIds: t.subtaskIds.map(sid => copyRec(sid, newId, catId ?? t.categoryId)) };
+        return newId;
+      };
+      const newIds = ids.map(id => copyRec(id, newParentId, newCategoryId));
+      next[newParentId] = { ...next[newParentId], subtaskIds: [...next[newParentId].subtaskIds, ...newIds] };
+      return next;
+    });
+  }, []);
+
+  const moveTask = useCallback((id: string, newCategoryId: string) => {
+    setTasks(prev => {
+      const next = { ...prev };
+      const moveRecursive = (taskId: string) => {
+        if (!next[taskId]) return;
+        next[taskId] = { ...next[taskId], categoryId: newCategoryId };
+        next[taskId].subtaskIds.forEach(moveRecursive);
+      };
+      moveRecursive(id);
+      return next;
+    });
+  }, []);
+
   const deleteTask = useCallback((id: string) => {
     setTasks(prev => {
       const taskToDelete = prev[id];
@@ -244,6 +423,13 @@ export function useTasks() {
     setActiveCategoryId,
     addTask,
     updateTask,
+    copyTask,
+    moveTask,
+    moveUnderTask,
+    bulkMoveToCategory,
+    bulkCopyToCategory,
+    bulkMoveUnderTask,
+    bulkCopyUnderTask,
     deleteTask,
     setTaskStatus,
     setMultipleTasksStatus,

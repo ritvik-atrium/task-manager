@@ -7,7 +7,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
-import { Filter, CalendarIcon, ChevronDown } from 'lucide-react';
+import { Filter, CalendarIcon, ChevronDown, ArrowUpDown, X } from 'lucide-react';
 import { format, addDays, startOfDay, endOfDay, subDays, isWithinInterval } from 'date-fns';
 import { cn } from '@/lib/utils';
 
@@ -138,6 +138,8 @@ function DateRangePicker({ label, start, end, onStartChange, onEndChange, future
 const LIFE_AREAS = ['Personal', 'Professional', 'Social', 'Spiritual'] as const;
 
 // ─── Filter bar UI ────────────────────────────────────────────────────────────
+export type SortBy = 'default' | 'deadline-asc' | 'deadline-desc';
+
 interface TaskFiltersProps {
   filters: TaskFilterState;
   onChange: (f: TaskFilterState) => void;
@@ -146,6 +148,8 @@ interface TaskFiltersProps {
   onCategoriesChange?: (ids: string[] | null) => void;
   selectedAreas?: string[] | null;       // null means all; [] means none
   onAreasChange?: (areas: string[] | null) => void;
+  sortBy?: SortBy;
+  onSortChange?: (s: SortBy) => void;
 }
 
 const STATUS_OPTIONS = [
@@ -154,7 +158,7 @@ const STATUS_OPTIONS = [
   { value: 'done', label: 'Completed' },
 ] as const;
 
-export function TaskFilters({ filters, onChange, categories, selectedCategories, onCategoriesChange, selectedAreas, onAreasChange }: TaskFiltersProps) {
+export function TaskFilters({ filters, onChange, categories, selectedCategories, onCategoriesChange, selectedAreas, onAreasChange, sortBy, onSortChange }: TaskFiltersProps) {
   const [catOpen, setCatOpen] = useState(false);
   const [areaOpen, setAreaOpen] = useState(false);
   const [statusOpen, setStatusOpen] = useState(false);
@@ -326,32 +330,63 @@ export function TaskFilters({ filters, onChange, categories, selectedCategories,
         </Popover>
 
         {/* Deadline (future) */}
-        <Select value={filters.deadline} onValueChange={(v) => update({ deadline: v, deadlineStart: undefined, deadlineEnd: undefined })}>
-          <SelectTrigger className={cn("w-44 h-9 rounded-xl border-none shadow-sm bg-white dark:bg-muted", filters.deadline === 'custom' && "ring-2 ring-primary/30")}>
-            <SelectValue placeholder="Deadline" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="All">Any Deadline</SelectItem>
-            <SelectItem value="within1">Within 1 Day</SelectItem>
-            <SelectItem value="within7">Within a Week</SelectItem>
-            <SelectItem value="within30">Within a Month</SelectItem>
-            <SelectItem value="custom">Custom Range</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-1">
+          <Select value={filters.deadline} onValueChange={(v) => update({ deadline: v, deadlineStart: undefined, deadlineEnd: undefined })}>
+            <SelectTrigger className={cn("w-44 h-9 rounded-xl border-none shadow-sm bg-white dark:bg-muted", filters.deadline === 'custom' && "ring-2 ring-primary/30")}>
+              <SelectValue placeholder="Deadline" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="All">Any Deadline</SelectItem>
+              <SelectItem value="within1">Within 1 Day</SelectItem>
+              <SelectItem value="within7">Within a Week</SelectItem>
+              <SelectItem value="within30">Within a Month</SelectItem>
+              <SelectItem value="custom">Custom Range</SelectItem>
+            </SelectContent>
+          </Select>
+          {filters.deadline !== 'All' && (
+            <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg text-muted-foreground hover:text-foreground" onClick={() => update({ deadline: 'All', deadlineStart: undefined, deadlineEnd: undefined })}>
+              <X className="w-3 h-3" />
+            </Button>
+          )}
+        </div>
 
         {/* Completed In (past) */}
-        <Select value={filters.completedIn} onValueChange={(v) => update({ completedIn: v, completedInStart: undefined, completedInEnd: undefined })}>
-          <SelectTrigger className={cn("w-48 h-9 rounded-xl border-none shadow-sm bg-white dark:bg-muted", filters.completedIn === 'custom' && "ring-2 ring-primary/30")}>
-            <SelectValue placeholder="Completed In" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="All">Any Time Completed</SelectItem>
-            <SelectItem value="today">Completed Today</SelectItem>
-            <SelectItem value="within7">Completed This Week</SelectItem>
-            <SelectItem value="within30">Completed This Month</SelectItem>
-            <SelectItem value="custom">Custom Range</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-1">
+          <Select value={filters.completedIn} onValueChange={(v) => update({ completedIn: v, completedInStart: undefined, completedInEnd: undefined })}>
+            <SelectTrigger className={cn("w-48 h-9 rounded-xl border-none shadow-sm bg-white dark:bg-muted", filters.completedIn === 'custom' && "ring-2 ring-primary/30")}>
+              <SelectValue placeholder="Completed In" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="All">Any Time Completed</SelectItem>
+              <SelectItem value="today">Completed Today</SelectItem>
+              <SelectItem value="within7">Completed This Week</SelectItem>
+              <SelectItem value="within30">Completed This Month</SelectItem>
+              <SelectItem value="custom">Custom Range</SelectItem>
+            </SelectContent>
+          </Select>
+          {filters.completedIn !== 'All' && (
+            <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg text-muted-foreground hover:text-foreground" onClick={() => update({ completedIn: 'All', completedInStart: undefined, completedInEnd: undefined })}>
+              <X className="w-3 h-3" />
+            </Button>
+          )}
+        </div>
+
+        {/* Sort (dashboard only) */}
+        {onSortChange && sortBy && (
+          <div className="flex items-center gap-1.5 ml-auto shrink-0">
+            <ArrowUpDown className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+            <Select value={sortBy} onValueChange={(v) => onSortChange(v as SortBy)}>
+              <SelectTrigger className="h-9 text-sm w-44 rounded-xl border-none shadow-sm bg-white dark:bg-muted">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="deadline-asc">Closest deadline first</SelectItem>
+                <SelectItem value="deadline-desc">Farthest deadline first</SelectItem>
+                <SelectItem value="default">Default order</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
       </div>
 
       {/* Deadline custom range */}
